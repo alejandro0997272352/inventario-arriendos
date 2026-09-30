@@ -561,6 +561,8 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="btn-group">
       <button class="btn btn-success" onclick="exportarPDF()">Exportar PDF</button>
       <button class="btn btn-success" onclick="exportarReporteMensual()">Reporte Mensual</button>
+      <button class="btn btn-primary" onclick="ordenarPorDeuda()">Ordenar por Deuda</button>
+      <button class="btn btn-primary" onclick="busquedaAvanzada()">Búsqueda Avanzada</button>
       <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Importar CSV/JSON</button>
       <input type="file" id="importFile" accept=".csv,.json" style="display:none" onchange="importarArchivo(event)">
       <button class="btn btn-danger" onclick="eliminarTodo()">Eliminar Todo</button>
@@ -587,26 +589,39 @@ tbody tr:last-child td { border-bottom: none; }
   </div>
 
   <div class="card glass">
+    <div class="card-title">&#128200; Gráfico de Consumo - Servicios</div>
+    <div class="chart-container" style="height:200px;">
+      <canvas id="serviciosChart"></canvas>
+    </div>
+    <div id="comparativoContainer" style="margin-top:16px;"></div>
+    <div class="btn-group">
+      <button class="btn btn-success" onclick="exportarServiciosPDF()">Exportar Servicios PDF</button>
+    </div>
+  </div>
+
+  <div class="card glass">
     <div class="card-title">&#9881; Pagos de Servicios Básicos</div>
     <div class="servicios-grid">
       <div class="servicio-panel glass">
-        <div class="servicio-title">&#128161; Medidor 1 - Primer Piso</div>
-        <div class="servicio-unidades">LOC-01, LOC-02, DEP-01</div>
+        <div class="servicio-title">&#128161; Medidor 1 - Departamentos</div>
+        <div class="servicio-unidades">DEP-01 a DEP-12</div>
         <div class="form-grid" style="margin:12px 0;">
           <div class="form-group"><label>Costo Total</label><input type="number" id="costo1" min="0" step="0.01" placeholder="0.00"></div>
           <div class="form-group"><label>Fecha</label><input type="date" id="fecha1"></div>
         </div>
         <button class="btn btn-primary" onclick="registrarServicio(1)">Registrar</button>
+        <div id="serviciosPromedio1" style="margin-top:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:0.85em;"></div>
         <div id="serviciosList1" style="margin-top:12px;"></div>
       </div>
       <div class="servicio-panel glass">
-        <div class="servicio-title">&#128161; Medidor 2 - 2° y 3° Piso</div>
-        <div class="servicio-unidades">DEP-02 a DEP-12</div>
+        <div class="servicio-title">&#128161; Medidor 2 - Locales</div>
+        <div class="servicio-unidades">LOC-01, LOC-02</div>
         <div class="form-grid" style="margin:12px 0;">
           <div class="form-group"><label>Costo Total</label><input type="number" id="costo2" min="0" step="0.01" placeholder="0.00"></div>
           <div class="form-group"><label>Fecha</label><input type="date" id="fecha2"></div>
         </div>
         <button class="btn btn-primary" onclick="registrarServicio(2)">Registrar</button>
+        <div id="serviciosPromedio2" style="margin-top:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:0.85em;"></div>
         <div id="serviciosList2" style="margin-top:12px;"></div>
       </div>
     </div>
@@ -1006,8 +1021,14 @@ function actualizarAlertas(datos) {
   const list = document.getElementById('alertList');
   const atrasados = datos.filter(d => d.estado === 'pendiente');
   const pagosParciales = datos.filter(d => d.estado === 'pagado' && d.monto < (d.monto * 0.9));
+  const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
+  const serviciosPendientes = servicios.filter(s => {
+    const fechaLimite = new Date(s.fecha);
+    fechaLimite.setDate(fechaLimite.getDate() + 30);
+    return new Date() > fechaLimite;
+  });
 
-  if (atrasados.length === 0 && pagosParciales.length === 0) {
+  if (atrasados.length === 0 && pagosParciales.length === 0 && serviciosPendientes.length === 0) {
     panel.style.display = 'none';
     return;
   }
@@ -1019,6 +1040,9 @@ function actualizarAlertas(datos) {
   });
   pagosParciales.forEach(d => {
     html += `<div class="alert-item"><span>${esc(d.arrendatario)} (${esc(d.codigo)})</span><span style="color:var(--warning);font-weight:600;">Pago parcial</span></div>`;
+  });
+  serviciosPendientes.forEach(s => {
+    html += `<div class="alert-item"><span>Medidor ${s.medidor}</span><span style="color:var(--warning);font-weight:600;">Servicio pendiente</span></div>`;
   });
   list.innerHTML = html;
 }
@@ -1113,12 +1137,40 @@ function renderCalendario(datos) {
   container.innerHTML = html;
 }
 
+function exportarServiciosPDF() {
+  const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
+  if (servicios.length === 0) { showToast('No hay servicios para exportar', 'error'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('landscape');
+  doc.setFontSize(18);
+  doc.text('Reporte de Servicios Básicos', 14, 20);
+  doc.setFontSize(10);
+  doc.text(`Generado: ${new Date().toLocaleDateString('es-CL')}`, 14, 28);
+  const headers = [['Medidor','Fecha','Costo Total','Costo por Unidad','Unidades']];
+  const rows = servicios.map(s => [
+    s.medidor === 1 ? 'Medidor 1 (Deps)' : 'Medidor 2 (Locales)',
+    s.fecha || '-',
+    formatCurrency(s.costo),
+    formatCurrency(s.costoPorUnidad),
+    s.unidades.length
+  ]);
+  doc.autoTable({
+    head: headers,
+    body: rows,
+    startY: 35,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [99, 102, 241] }
+  });
+  doc.save('servicios_basicos.pdf');
+  showToast('PDF exportado');
+}
+
 function registrarServicio(medidor) {
   const costo = parseFloat(document.getElementById('costo' + medidor).value) || 0;
   const fecha = document.getElementById('fecha' + medidor).value;
   if (costo <= 0) { showToast('Ingrese el costo total', 'error'); return; }
   const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
-  const unidades = medidor === 1 ? ['LOC-01', 'LOC-02', 'DEP-01'] : ['DEP-02','DEP-03','DEP-04','DEP-05','DEP-06','DEP-07','DEP-08','DEP-09','DEP-10','DEP-11','DEP-12'];
+  const unidades = medidor === 1 ? ['DEP-01','DEP-02','DEP-03','DEP-04','DEP-05','DEP-06','DEP-07','DEP-08','DEP-09','DEP-10','DEP-11','DEP-12'] : ['LOC-01', 'LOC-02'];
   const costoPorUnidad = costo / unidades.length;
   servicios.push({ medidor, costo, costoPorUnidad, unidades, fecha, creado: new Date().toISOString() });
   localStorage.setItem('servicios', JSON.stringify(servicios));
@@ -1127,16 +1179,73 @@ function registrarServicio(medidor) {
   showToast('Servicio registrado');
 }
 
+function renderComparativoConsumo() {
+  const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
+  const meses = [...new Set(servicios.map(s => s.fecha ? s.fecha.slice(0, 7) : '').filter(Boolean))].sort();
+  if (meses.length < 2) return;
+  const container = document.getElementById('comparativoContainer');
+  if (!container) return;
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  for (let i = 1; i < meses.length; i++) {
+    const mesActual = meses[i];
+    const mesAnterior = meses[i - 1];
+    const costoActual = servicios.filter(s => s.fecha && s.fecha.startsWith(mesActual)).reduce((sum, s) => sum + s.costo, 0);
+    const costoAnterior = servicios.filter(s => s.fecha && s.fecha.startsWith(mesAnterior)).reduce((sum, s) => sum + s.costo, 0);
+    const variacion = costoAnterior > 0 ? ((costoActual - costoAnterior) / costoAnterior * 100).toFixed(1) : 0;
+    const color = variacion > 0 ? 'var(--danger)' : 'var(--success)';
+    const icon = variacion > 0 ? '↑' : '↓';
+    html += `<div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+      <span>${formatMes(mesActual)}</span>
+      <span style="color:${color};font-weight:600;">${icon} ${variacion}%</span>
+    </div>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderServiciosChart() {
+  const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
+  const ctx = document.getElementById('serviciosChart').getContext('2d');
+  const meses = [...new Set(servicios.map(s => s.fecha ? s.fecha.slice(0, 7) : '').filter(Boolean))].sort();
+  const costos1 = meses.map(m => servicios.filter(s => s.medidor === 1 && s.fecha && s.fecha.startsWith(m)).reduce((sum, s) => sum + s.costo, 0));
+  const costos2 = meses.map(m => servicios.filter(s => s.medidor === 2 && s.fecha && s.fecha.startsWith(m)).reduce((sum, s) => sum + s.costo, 0));
+  if (window.serviciosChartInstance) window.serviciosChartInstance.destroy();
+  window.serviciosChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: meses.map(formatMes),
+      datasets: [
+        { label: 'Medidor 1 (Deps)', data: costos1, backgroundColor: 'rgba(129,140,248,0.5)', borderColor: 'rgba(129,140,248,0.8)', borderWidth: 2, borderRadius: 6 },
+        { label: 'Medidor 2 (Locales)', data: costos2, backgroundColor: 'rgba(251,191,36,0.5)', borderColor: 'rgba(251,191,36,0.8)', borderWidth: 2, borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#7c8aa0' } } },
+      scales: {
+        x: { ticks: { color: '#7c8aa0' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+        y: { ticks: { color: '#7c8aa0' }, grid: { color: 'rgba(255,255,255,0.03)' } }
+      }
+    }
+  });
+}
+
 function renderServicios() {
   const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
   [1, 2].forEach(medidor => {
     const container = document.getElementById('serviciosList' + medidor);
+    const promedioContainer = document.getElementById('serviciosPromedio' + medidor);
     const serviciosFiltrados = servicios.filter(s => s.medidor === medidor);
     if (serviciosFiltrados.length === 0) {
       container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85em;">No hay servicios registrados</p>';
+      promedioContainer.innerHTML = '<span style="color:var(--text-muted);">Sin datos</span>';
       return;
     }
     const total = serviciosFiltrados.reduce((s, sv) => s + sv.costo, 0);
+    const promedio = total / serviciosFiltrados.length;
+    const costoPorUnidad = serviciosFiltrados[serviciosFiltrados.length - 1].costoPorUnidad;
+    promedioContainer.innerHTML = `<strong>Costo promedio:</strong> ${formatCurrency(promedio)} | <strong>Por unidad:</strong> ${formatCurrency(costoPorUnidad)}`;
     let html = `<div style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;"><strong>Total:</strong> <span style="color:var(--danger);font-weight:600;">${formatCurrency(total)}</span></div>`;
     html += '<div style="display:flex;flex-direction:column;gap:8px;">';
     serviciosFiltrados.slice().reverse().forEach(sv => {
@@ -1161,6 +1270,44 @@ function toggleDashboard() {
   showToast('Dashboard reorganizado');
 }
 
+function initDragAndDrop() {
+  const container = document.getElementById('dashboardContainer');
+  let draggedItem = null;
+  container.addEventListener('dragstart', (e) => {
+    draggedItem = e.target.closest('.dashboard-panel');
+    if (draggedItem) e.dataTransfer.effectAllowed = 'move';
+  });
+  container.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const afterElement = getDragAfterElement(container, e.clientY);
+    if (afterElement == null) {
+      container.appendChild(draggedItem);
+    } else {
+      container.insertBefore(draggedItem, afterElement);
+    }
+  });
+  container.addEventListener('dragend', () => {
+    draggedItem = null;
+  });
+  container.querySelectorAll('.dashboard-panel').forEach(panel => {
+    panel.draggable = true;
+    panel.style.cursor = 'grab';
+  });
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.dashboard-panel:not([style*="opacity: 0"])')];
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
 function toggleTema() {
   const body = document.body;
   const isLight = body.style.background === '#f0f4f8';
@@ -1176,7 +1323,27 @@ function toggleTema() {
     document.documentElement.style.setProperty('--glass-border', 'rgba(255,255,255,0.09)');
     document.documentElement.style.setProperty('--shadow', '0 8px 32px rgba(0,0,0,0.25)');
     document.documentElement.style.setProperty('--shadow-lg', '0 10px 15px -3px rgba(0,0,0,0.08)');
+    localStorage.setItem('tema', 'oscuro');
   } else {
+    body.style.background = '#f0f4f8';
+    body.style.backgroundImage = 'none';
+    body.style.color = '#334155';
+    document.documentElement.style.setProperty('--text', '#334155');
+    document.documentElement.style.setProperty('--text-bright', '#1e293b');
+    document.documentElement.style.setProperty('--text-muted', '#64748b');
+    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.85)');
+    document.documentElement.style.setProperty('--glass-strong', 'rgba(255,255,255,0.95)');
+    document.documentElement.style.setProperty('--glass-border', 'rgba(0,0,0,0.08)');
+    document.documentElement.style.setProperty('--shadow', '0 4px 12px rgba(0,0,0,0.08)');
+    document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.12)');
+    localStorage.setItem('tema', 'claro');
+  }
+}
+
+function aplicarTemaGuardado() {
+  const tema = localStorage.getItem('tema');
+  if (tema === 'claro') {
+    const body = document.body;
     body.style.background = '#f0f4f8';
     body.style.backgroundImage = 'none';
     body.style.color = '#334155';
@@ -1449,16 +1616,18 @@ function verRecibo(id) {
     const d = datos.find(x => x.id === id);
     if (!d) return;
     const html = `
-      <div style="text-align:center;padding:20px;">
-        <div style="font-size:2em;margin-bottom:12px;">&#128179;</div>
-        <h3 style="color:var(--text-bright);margin-bottom:4px;">Recibo de Pago</h3>
-        <p style="color:var(--text-muted);font-size:0.85em;margin-bottom:20px;">${new Date().toLocaleDateString('es-CL')}</p>
-        <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:16px;text-align:left;border:1px solid rgba(255,255,255,0.06);">
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Unidad:</span><strong>${esc(d.codigo)}</strong></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Arrendatario:</span><strong>${esc(d.arrendatario)}</strong></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Mes:</span><strong>${formatMes(d.mesPago)}</strong></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Monto:</span><strong style="color:var(--success);">${formatCurrency(d.monto)}</strong></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Método:</span><strong>${d.metodoPago || '-'}</strong></div>
+      <div style="text-align:center;padding:24px;">
+        <div style="width:80px;height:80px;margin:0 auto 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(99,102,241,0.3);">
+          <span style="font-size:2.5em;color:#fff;">&#127968;</span>
+        </div>
+        <h3 style="color:var(--text-bright);margin-bottom:4px;font-size:1.3em;">Recibo de Pago</h3>
+        <p style="color:var(--text-muted);font-size:0.85em;margin-bottom:24px;">${new Date().toLocaleDateString('es-CL')}</p>
+        <div style="background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;text-align:left;border:1px solid rgba(255,255,255,0.08);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:var(--text-muted);">Unidad:</span><strong>${esc(d.codigo)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:var(--text-muted);">Arrendatario:</span><strong>${esc(d.arrendatario)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:var(--text-muted);">Mes:</span><strong>${formatMes(d.mesPago)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:var(--text-muted);">Monto:</span><strong style="color:var(--success);font-size:1.1em;">${formatCurrency(d.monto)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="color:var(--text-muted);">Método:</span><strong>${d.metodoPago || '-'}</strong></div>
           <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted);">Estado:</span><strong style="color:var(--success);">Pagado</strong></div>
         </div>
       </div>
@@ -1501,6 +1670,74 @@ function exportarHistorialCompleto(id) {
   });
 }
 
+function busquedaAvanzada() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;justify-content:center;align-items:center;backdrop-filter:blur(8px);animation:fadeIn 0.3s ease;';
+  overlay.innerHTML = `
+    <div style="background:rgba(18,18,32,0.95);backdrop-filter:blur(40px);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:32px;max-width:500px;width:90%;animation:slideUp 0.4s cubic-bezier(0.4,0,0.2,1);box-shadow:0 25px 50px rgba(0,0,0,0.5);">
+      <h3 style="color:var(--text-bright);margin-bottom:20px;font-size:1.2em;">Búsqueda Avanzada</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <input type="text" id="busquedaTexto" placeholder="Buscar por nombre o código..." style="padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <input type="date" id="busquedaFechaDesde" style="padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);">
+          <input type="date" id="busquedaFechaHasta" style="padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <input type="number" id="busquedaMontoMin" placeholder="Monto mín" style="padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);">
+          <input type="number" id="busquedaMontoMax" placeholder="Monto máx" style="padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);">
+        </div>
+        <select id="busquedaEstado" style="padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);">
+          <option value="">Todos los estados</option>
+          <option value="pagado">Pagado</option>
+          <option value="pendiente">Pendiente</option>
+        </select>
+        <select id="busquedaEtiqueta" style="padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);">
+          <option value="">Todas las etiquetas</option>
+          <option value="rojo">Rojo</option>
+          <option value="amarillo">Amarillo</option>
+          <option value="verde">Verde</option>
+          <option value="azul">Azul</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:20px;justify-content:flex-end;">
+        <button id="btnBuscar" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:600;cursor:pointer;font-size:0.9em;">Buscar</button>
+        <button id="btnLimpiar" style="padding:12px 24px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:rgba(255,255,255,0.04);color:var(--text-muted);font-weight:600;cursor:pointer;font-size:0.9em;">Limpiar</button>
+        <button id="btnCerrar" style="padding:12px 24px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:rgba(255,255,255,0.04);color:var(--text-muted);font-weight:600;cursor:pointer;font-size:0.9em;">Cerrar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#btnCerrar').onclick = () => overlay.remove();
+  overlay.querySelector('#btnLimpiar').onclick = () => {
+    overlay.querySelector('#busquedaTexto').value = '';
+    overlay.querySelector('#busquedaFechaDesde').value = '';
+    overlay.querySelector('#busquedaFechaHasta').value = '';
+    overlay.querySelector('#busquedaMontoMin').value = '';
+    overlay.querySelector('#busquedaMontoMax').value = '';
+    overlay.querySelector('#busquedaEstado').value = '';
+    overlay.querySelector('#busquedaEtiqueta').value = '';
+  };
+  overlay.querySelector('#btnBuscar').onclick = () => {
+    const texto = overlay.querySelector('#busquedaTexto').value.toLowerCase();
+    const fechaDesde = overlay.querySelector('#busquedaFechaDesde').value;
+    const fechaHasta = overlay.querySelector('#busquedaFechaHasta').value;
+    const montoMin = parseFloat(overlay.querySelector('#busquedaMontoMin').value) || 0;
+    const montoMax = parseFloat(overlay.querySelector('#busquedaMontoMax').value) || Infinity;
+    const estado = overlay.querySelector('#busquedaEstado').value;
+    const etiqueta = overlay.querySelector('#busquedaEtiqueta').value;
+    document.getElementById('buscar').value = texto;
+    document.getElementById('filtroFechaDesde').value = fechaDesde;
+    document.getElementById('filtroFechaHasta').value = fechaHasta;
+    document.getElementById('filtroMontoMin').value = montoMin || '';
+    document.getElementById('filtroMontoMax').value = montoMax === Infinity ? '' : montoMax;
+    document.getElementById('filtroEstado').value = estado;
+    document.getElementById('filtroEtiqueta').value = etiqueta;
+    renderTabla();
+    overlay.remove();
+    showToast('Búsqueda aplicada');
+  };
+}
+
 function imprimirRecibo() {
   const content = document.getElementById('reciboContent').innerHTML;
   const win = window.open('', '_blank');
@@ -1534,6 +1771,18 @@ function descargar(filename, content, mime) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function ordenarPorDeuda() {
+  const datos = JSON.parse(localStorage.getItem('datosOrdenados') || 'null');
+  if (!datos) {
+    showToast('No hay datos para ordenar', 'error');
+    return;
+  }
+  const ordenados = [...datos].sort((a, b) => calcularSaldo(b) - calcularSaldo(a));
+  localStorage.setItem('datosOrdenados', JSON.stringify(ordenados));
+  renderTabla();
+  showToast('Ordenado por deuda (mayor a menor)');
 }
 
 function exportarPDF() {
@@ -1739,10 +1988,14 @@ function actualizarSelectGastos(datos) {
 }
 
 initDB().then(async () => {
+  aplicarTemaGuardado();
   renderTabla();
   toggleComprobante();
   actualizarTipoTamano();
   renderServicios();
+  renderServiciosChart();
+  renderComparativoConsumo();
+  initDragAndDrop();
   const datos = await getAll();
   verificarNotificaciones(datos);
 }).catch(error => {

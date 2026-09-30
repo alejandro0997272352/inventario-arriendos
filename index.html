@@ -82,6 +82,8 @@ body::after {
 .nav-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
 
 .scroll-section { scroll-margin-top: 80px; }
+.panel { display: none; }
+.panel.active { display: block; animation: fadeIn 0.3s ease; }
 
 .container { max-width: 1400px; margin: 0 auto; padding: 28px; padding-top: 80px; position: relative; z-index: 1; }
 
@@ -498,10 +500,12 @@ tbody tr:last-child td { border-bottom: none; }
     <span class="nav-title">Inventario de Arriendos</span>
   </div>
   <div class="nav-links">
-    <a href="#dashboard" class="nav-link active" onclick="scrollToSection('dashboard')">&#128200; Dashboard</a>
-    <a href="#registros" class="nav-link" onclick="scrollToSection('registros')">&#128202; Registros</a>
-    <a href="#servicios" class="nav-link" onclick="scrollToSection('servicios')">&#9881; Servicios</a>
-    <a href="#reportes" class="nav-link" onclick="scrollToSection('reportes')">&#128196; Reportes</a>
+    <a href="#" class="nav-link active" onclick="showPanel('dashboard', this)">&#128200; Dashboard</a>
+    <a href="#" class="nav-link" onclick="showPanel('registros', this)">&#128202; Registros</a>
+    <a href="#" class="nav-link" onclick="showPanel('nuevo', this)">&#128203; Nuevo</a>
+    <a href="#" class="nav-link" onclick="showPanel('servicios', this)">&#9881; Servicios</a>
+    <a href="#" class="nav-link" onclick="showPanel('reportes', this)">&#128196; Reportes</a>
+    <a href="#" class="nav-link" onclick="showPanel('config', this)">&#9881; Config</a>
   </div>
   <div class="nav-actions">
     <button class="nav-btn" onclick="toggleTema()" title="Cambiar tema (Ctrl+T)">&#127769;</button>
@@ -523,7 +527,7 @@ tbody tr:last-child td { border-bottom: none; }
     <p>12 Departamentos para estudiantes + 2 Locales comerciales</p>
   </div>
 
-  <div id="dashboard" class="scroll-section">
+  <div id="panel-dashboard" class="panel active">
   <div class="dashboard" id="dashboardContainer">
     <div class="dashboard-panel glass">
       <div class="panel-title">&#127968; Resumen General</div>
@@ -581,7 +585,7 @@ tbody tr:last-child td { border-bottom: none; }
   </div>
   </div>
 
-  <div id="registros" class="scroll-section">
+  <div id="panel-registros" class="panel">
   <div class="alert-panel" id="alertPanel" style="display:none;">
     <h3>&#9888; Alertas</h3>
     <div id="alertList"></div>
@@ -681,7 +685,7 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <div id="reportes" class="scroll-section">
+  <div id="panel-reportes" class="panel">
   <div class="card glass">
     <div class="card-title">&#128200; Gráfico de Ingresos</div>
     <div class="chart-container">
@@ -701,7 +705,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div id="calendarioContainer" style="overflow-x:auto;"></div>
   </div>
 
-  <div id="servicios" class="scroll-section">
+  <div id="panel-servicios" class="panel">
   <div class="card glass">
     <div class="card-title">&#128200; Gráfico de Consumo - Servicios</div>
     <div class="chart-container" style="height:200px;">
@@ -738,6 +742,17 @@ tbody tr:last-child td { border-bottom: none; }
         <div id="serviciosPromedio2" style="margin-top:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:0.85em;"></div>
         <div id="serviciosList2" style="margin-top:12px;"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="panel-config" class="panel">
+  <div class="card glass">
+    <div class="card-title">&#9881; Configuración</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Tema</label><select id="configTema" onchange="toggleTema()"><option value="oscuro">Oscuro</option><option value="claro">Claro</option></select></div>
+      <div class="form-group"><label>Color Primario</label><div style="display:flex;gap:8px;"><button class="color-theme-btn active" style="background:#6366f1;" onclick="setColorTheme('#6366f1', this)"></button><button class="color-theme-btn" style="background:#10b981;" onclick="setColorTheme('#10b981', this)"></button><button class="color-theme-btn" style="background:#f59e0b;" onclick="setColorTheme('#f59e0b', this)"></button><button class="color-theme-btn" style="background:#ef4444;" onclick="setColorTheme('#ef4444', this)"></button><button class="color-theme-btn" style="background:#8b5cf6;" onclick="setColorTheme('#8b5cf6', this)"></button></div></div>
+      <div class="form-group"><label>Modo</label><select id="configModo" onchange="toggleCompacto()"><option value="expandido">Expandido</option><option value="compacto">Compacto</option></select></div>
     </div>
   </div>
 </div>
@@ -2200,13 +2215,17 @@ function aplicarCompactMode() {
   if (isCompact) document.body.classList.add('compact-mode');
 }
 
-function scrollToSection(id) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    event.target.classList.add('active');
-  }
+function showPanel(panelId, navElement) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + panelId);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  if (navElement) navElement.classList.add('active');
+  if (panelId === 'dashboard') renderTabla();
+  if (panelId === 'registros') renderTabla();
+  if (panelId === 'servicios') { renderServicios(); renderServiciosChart(); }
+  if (panelId === 'reportes') actualizarGrafico([]);
+}
 }
 
 document.addEventListener('keydown', (e) => {

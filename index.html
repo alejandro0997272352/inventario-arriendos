@@ -81,6 +81,11 @@ body::before {
   box-shadow: 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
+.servicios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.servicio-panel { padding: 20px; }
+.servicio-title { font-size: 0.95em; font-weight: 700; color: var(--text-bright); margin-bottom: 8px; }
+.servicio-unidades { font-size: 0.8em; color: var(--text-muted); margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; }
+
 .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 28px; }
 .dashboard-panel { padding: 20px; }
 .panel-title { font-size: 0.95em; font-weight: 700; color: var(--text-bright); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border); }
@@ -573,15 +578,31 @@ tbody tr:last-child td { border-bottom: none; }
   </div>
 
   <div class="card glass">
-    <div class="card-title">&#128198; Gastos de Mantenimiento</div>
-    <div class="form-grid" style="margin-bottom:16px;">
-      <div class="form-group"><label>Unidad</label><select id="gastoUnidad"><option value="">Seleccionar...</option></select></div>
-      <div class="form-group"><label>Monto</label><input type="number" id="gastoMonto" min="0" step="0.01" placeholder="0.00"></div>
-      <div class="form-group"><label>Descripción</label><input type="text" id="gastoDescripcion" placeholder="Ej: Reparación"></div>
-      <div class="form-group"><label>Fecha</label><input type="date" id="gastoFecha"></div>
+    <div class="card-title">&#9881; Pagos de Servicios Básicos</div>
+    <div class="servicios-grid">
+      <div class="servicio-panel glass">
+        <div class="servicio-title">&#128161; Medidor 1 - Primer Piso</div>
+        <div class="servicio-unidades">LOC-01, LOC-02, DEP-01</div>
+        <div class="form-grid" style="margin:12px 0;">
+          <div class="form-group"><label>Consumo (kWh)</label><input type="number" id="consumo1" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="form-group"><label>Costo Total</label><input type="number" id="costo1" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="form-group"><label>Fecha</label><input type="date" id="fecha1"></div>
+        </div>
+        <button class="btn btn-primary" onclick="registrarServicio(1)">Registrar</button>
+        <div id="serviciosList1" style="margin-top:12px;"></div>
+      </div>
+      <div class="servicio-panel glass">
+        <div class="servicio-title">&#128161; Medidor 2 - 2° y 3° Piso</div>
+        <div class="servicio-unidades">DEP-02 a DEP-12</div>
+        <div class="form-grid" style="margin:12px 0;">
+          <div class="form-group"><label>Consumo (kWh)</label><input type="number" id="consumo2" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="form-group"><label>Costo Total</label><input type="number" id="costo2" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="form-group"><label>Fecha</label><input type="date" id="fecha2"></div>
+        </div>
+        <button class="btn btn-primary" onclick="registrarServicio(2)">Registrar</button>
+        <div id="serviciosList2" style="margin-top:12px;"></div>
+      </div>
     </div>
-    <button class="btn btn-primary" onclick="agregarGasto()">Agregar Gasto</button>
-    <div id="gastosList" style="margin-top:16px;"></div>
   </div>
 </div>
 
@@ -625,6 +646,9 @@ tbody tr:last-child td { border-bottom: none; }
       <button class="modal-close" onclick="document.getElementById('historialModal').classList.remove('active')">&times;</button>
     </div>
     <div id="historialContent"></div>
+    <div class="btn-group" style="margin-top:20px;">
+      <button class="btn btn-success" onclick="exportarHistorialCompleto(currentHistorialId)">Exportar Historial PDF</button>
+    </div>
   </div>
 </div>
 
@@ -926,7 +950,6 @@ async function renderTabla() {
     actualizarDashboard(datos);
     actualizarAlertas(datos);
     actualizarFiltroMes(datos);
-    actualizarSelectGastos(datos);
     actualizarGrafico(datos);
     verificarNotificaciones(datos);
     verificarRespaldoAutomatico(datos);
@@ -1083,50 +1106,46 @@ function renderCalendario(datos) {
   container.innerHTML = html;
 }
 
-function agregarGasto() {
-  const unidad = document.getElementById('gastoUnidad').value;
-  const monto = parseFloat(document.getElementById('gastoMonto').value) || 0;
-  const descripcion = document.getElementById('gastoDescripcion').value.trim();
-  const fecha = document.getElementById('gastoFecha').value;
-  if (!unidad || monto <= 0) { showToast('Complete los campos requeridos', 'error'); return; }
-  const gastos = JSON.parse(localStorage.getItem('gastos') || '[]');
-  gastos.push({ unidad, monto, descripcion, fecha, creado: new Date().toISOString() });
-  localStorage.setItem('gastos', JSON.stringify(gastos));
-  document.getElementById('gastoMonto').value = '';
-  document.getElementById('gastoDescripcion').value = '';
-  renderGastos();
-  showToast('Gasto agregado');
+function registrarServicio(medidor) {
+  const consumo = parseFloat(document.getElementById('consumo' + medidor).value) || 0;
+  const costo = parseFloat(document.getElementById('costo' + medidor).value) || 0;
+  const fecha = document.getElementById('fecha' + medidor).value;
+  if (consumo <= 0 || costo <= 0) { showToast('Complete los campos requeridos', 'error'); return; }
+  const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
+  const unidades = medidor === 1 ? ['LOC-01', 'LOC-02', 'DEP-01'] : ['DEP-02','DEP-03','DEP-04','DEP-05','DEP-06','DEP-07','DEP-08','DEP-09','DEP-10','DEP-11','DEP-12'];
+  const costoPorUnidad = costo / unidades.length;
+  servicios.push({ medidor, consumo, costo, costoPorUnidad, unidades, fecha, creado: new Date().toISOString() });
+  localStorage.setItem('servicios', JSON.stringify(servicios));
+  document.getElementById('consumo' + medidor).value = '';
+  document.getElementById('costo' + medidor).value = '';
+  renderServicios();
+  showToast('Servicio registrado');
 }
 
-function renderGastos() {
-  const gastos = JSON.parse(localStorage.getItem('gastos') || '[]');
-  const container = document.getElementById('gastosList');
-  if (gastos.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85em;">No hay gastos registrados</p>';
-    return;
-  }
-  const total = gastos.reduce((s, g) => s + g.monto, 0);
-  let html = `<div style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;"><strong>Total Gastos:</strong> <span style="color:var(--danger);font-weight:600;">${formatCurrency(total)}</span></div>`;
-  html += '<div style="display:flex;flex-direction:column;gap:8px;">';
-  gastos.slice().reverse().forEach((g, i) => {
-    html += `<div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
-      <div><strong>${esc(g.unidad)}</strong> - ${esc(g.descripcion)}<br><small style="color:var(--text-muted);">${g.fecha || '-'}</small></div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="color:var(--danger);font-weight:600;">${formatCurrency(g.monto)}</span>
-        <button class="btn btn-danger" style="padding:4px 8px;font-size:0.7em;" onclick="eliminarGasto(${gastos.length - 1 - i})">Eliminar</button>
-      </div>
-    </div>`;
+function renderServicios() {
+  const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
+  [1, 2].forEach(medidor => {
+    const container = document.getElementById('serviciosList' + medidor);
+    const serviciosFiltrados = servicios.filter(s => s.medidor === medidor);
+    if (serviciosFiltrados.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85em;">No hay servicios registrados</p>';
+      return;
+    }
+    const total = serviciosFiltrados.reduce((s, sv) => s + sv.costo, 0);
+    let html = `<div style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;"><strong>Total:</strong> <span style="color:var(--danger);font-weight:600;">${formatCurrency(total)}</span></div>`;
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+    serviciosFiltrados.slice().reverse().forEach(sv => {
+      html += `<div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <strong>${sv.fecha || '-'}</strong>
+          <span style="color:var(--danger);font-weight:600;">${formatCurrency(sv.costo)}</span>
+        </div>
+        <small style="color:var(--text-muted);">Consumo: ${sv.consumo} kWh | Por unidad: ${formatCurrency(sv.costoPorUnidad)}</small>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
   });
-  html += '</div>';
-  container.innerHTML = html;
-}
-
-function eliminarGasto(index) {
-  const gastos = JSON.parse(localStorage.getItem('gastos') || '[]');
-  gastos.splice(index, 1);
-  localStorage.setItem('gastos', JSON.stringify(gastos));
-  renderGastos();
-  showToast('Gasto eliminado');
 }
 
 function toggleDashboard() {
@@ -1388,7 +1407,10 @@ function eliminarTodo() {
   };
 }
 
+let currentHistorialId = null;
+
 function verHistorial(id) {
+  currentHistorialId = id;
   getAll().then(datos => {
     const d = datos.find(x => x.id === id);
     if (!d) return;
@@ -1440,6 +1462,37 @@ function verRecibo(id) {
     document.getElementById('reciboModal').classList.add('active');
   }).catch(error => {
     showToast('Error al ver recibo: ' + error.message, 'error');
+  });
+}
+
+function exportarHistorialCompleto(id) {
+  getAll().then(datos => {
+    const d = datos.find(x => x.id === id);
+    if (!d) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text('Historial Completo de Pagos', 14, 20);
+    doc.setFontSize(12);
+    doc.text(`Unidad: ${d.codigo}`, 14, 30);
+    doc.text(`Arrendatario: ${d.arrendatario}`, 14, 38);
+    doc.text(`Teléfono: ${d.telefono || '-'}`, 14, 46);
+    doc.text(`Tipo: ${d.tipo === 'departamento' ? 'Departamento' : 'Local Comercial'}`, 14, 54);
+    doc.text(`Monto Mensual: ${formatCurrency(d.monto)}`, 14, 62);
+    doc.text(`Total Pagado: ${formatCurrency(d.monto * (d.mesesPagados || []).length)}`, 14, 70);
+    doc.text(`Saldo Pendiente: ${formatCurrency(calcularSaldo(d))}`, 14, 78);
+    doc.setFontSize(14);
+    doc.text('Meses Pagados:', 14, 92);
+    doc.setFontSize(10);
+    let y = 100;
+    (d.mesesPagados || []).forEach(m => {
+      doc.text(`- ${formatMes(m)}`, 20, y);
+      y += 8;
+    });
+    doc.save(`historial_${d.codigo}_${d.arrendatario.replace(/\s+/g, '_')}.pdf`);
+    showToast('Historial exportado');
+  }).catch(error => {
+    showToast('Error al exportar: ' + error.message, 'error');
   });
 }
 
@@ -1677,20 +1730,15 @@ function exportarReporteMensual() {
 }
 
 function actualizarSelectGastos(datos) {
-  const select = document.getElementById('gastoUnidad');
-  const current = select.value;
-  const unidades = [...new Set(datos.map(d => d.codigo))].sort();
-  select.innerHTML = '<option value="">Seleccionar...</option>' + unidades.map(u => `<option value="${u}">${u}</option>`).join('');
-  select.value = current;
+  // Función mantenida por compatibilidad, ya no se usa
 }
 
 initDB().then(async () => {
   renderTabla();
   toggleComprobante();
   actualizarTipoTamano();
-  renderGastos();
+  renderServicios();
   const datos = await getAll();
-  actualizarSelectGastos(datos);
   verificarNotificaciones(datos);
 }).catch(error => {
   console.error('Error inicializando DB:', error);

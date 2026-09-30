@@ -81,7 +81,12 @@ body::before {
   box-shadow: 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
-.dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.dashboard-panel { padding: 20px; }
+.panel-title { font-size: 0.95em; font-weight: 700; color: var(--text-bright); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border); }
+.panel-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.panel-content .stat-card { padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.panel-content .stat-card:hover { background: rgba(255,255,255,0.05); transform: translateY(-2px); }
 .stat-card {
   padding: 20px;
   transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
@@ -395,43 +400,58 @@ tbody tr:last-child td { border-bottom: none; }
   </div>
 
   <div class="dashboard" id="dashboardContainer">
-    <div class="stat-card glass">
-      <div class="stat-icon">&#127968;</div>
-      <div class="stat-value" id="statUnidades">0</div>
-      <div class="stat-label">Unidades Activas</div>
+    <div class="dashboard-panel glass">
+      <div class="panel-title">&#127968; Resumen General</div>
+      <div class="panel-content">
+        <div class="stat-card">
+          <div class="stat-icon">&#127968;</div>
+          <div class="stat-value" id="statUnidades">0</div>
+          <div class="stat-label">Unidades Activas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">&#9989;</div>
+          <div class="stat-value" id="statPagado">$0</div>
+          <div class="stat-label">Total Recaudado</div>
+          <div class="progress-bar"><div class="progress-fill" id="progressPagado" style="width:0%; background: var(--success);"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">&#9888;</div>
+          <div class="stat-value" id="statPendiente">$0</div>
+          <div class="stat-label">Total por Cobrar</div>
+          <div class="progress-bar"><div class="progress-fill" id="progressPendiente" style="width:0%; background: var(--danger);"></div></div>
+        </div>
+      </div>
     </div>
-    <div class="stat-card glass">
-      <div class="stat-icon">&#9989;</div>
-      <div class="stat-value" id="statPagado">$0</div>
-      <div class="stat-label">Total Recaudado</div>
-      <div class="progress-bar"><div class="progress-fill" id="progressPagado" style="width:0%; background: var(--success);"></div></div>
+    <div class="dashboard-panel glass">
+      <div class="panel-title">&#128200; Estado de Pagos</div>
+      <div class="panel-content">
+        <div class="stat-card">
+          <div class="stat-icon">&#9888;</div>
+          <div class="stat-value" id="statAtrasados">0</div>
+          <div class="stat-label">Pagos Atrasados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">&#128200;</div>
+          <div class="stat-value" id="statMorosidad">0%</div>
+          <div class="stat-label">Tasa de Morosidad</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">&#128197;</div>
+          <div class="stat-value" id="statProximo">-</div>
+          <div class="stat-label">Próximo Pago</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-card glass">
-      <div class="stat-icon">&#9888;</div>
-      <div class="stat-value" id="statPendiente">$0</div>
-      <div class="stat-label">Total por Cobrar</div>
-      <div class="progress-bar"><div class="progress-fill" id="progressPendiente" style="width:0%; background: var(--danger);"></div></div>
-    </div>
-    <div class="stat-card glass">
-      <div class="stat-icon">&#9888;</div>
-      <div class="stat-value" id="statAtrasados">0</div>
-      <div class="stat-label">Pagos Atrasados</div>
-    </div>
-    <div class="stat-card glass">
-      <div class="stat-icon">&#128200;</div>
-      <div class="stat-value" id="statMorosidad">0%</div>
-      <div class="stat-label">Tasa de Morosidad</div>
-    </div>
-    <div class="stat-card glass">
-      <div class="stat-icon">&#128197;</div>
-      <div class="stat-value" id="statProximo">-</div>
-      <div class="stat-label">Próximo Pago</div>
-    </div>
-    <div class="stat-card glass">
-      <div class="stat-icon">&#128202;</div>
-      <div class="stat-value" id="statResumenMes">$0 / $0</div>
-      <div class="stat-label">Mes Actual (Pagado/Esperado)</div>
-      <div class="progress-bar"><div class="progress-fill" id="progressMes" style="width:0%; background: var(--primary);"></div></div>
+    <div class="dashboard-panel glass">
+      <div class="panel-title">&#128197; Mes Actual</div>
+      <div class="panel-content">
+        <div class="stat-card">
+          <div class="stat-icon">&#128202;</div>
+          <div class="stat-value" id="statResumenMes">$0 / $0</div>
+          <div class="stat-label">Pagado / Esperado</div>
+          <div class="progress-bar"><div class="progress-fill" id="progressMes" style="width:0%; background: var(--primary);"></div></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1082,13 +1102,9 @@ function eliminarGasto(index) {
 
 function toggleDashboard() {
   const container = document.getElementById('dashboardContainer');
-  const cards = Array.from(container.children);
-  const currentOrder = cards.map(c => c.querySelector('.stat-label').textContent);
-  const newOrder = [...currentOrder].sort(() => Math.random() - 0.5);
-  newOrder.forEach(label => {
-    const card = cards.find(c => c.querySelector('.stat-label').textContent === label);
-    if (card) container.appendChild(card);
-  });
+  const panels = Array.from(container.children);
+  const shuffled = [...panels].sort(() => Math.random() - 0.5);
+  shuffled.forEach(panel => container.appendChild(panel));
   showToast('Dashboard reorganizado');
 }
 

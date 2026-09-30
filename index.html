@@ -1420,7 +1420,7 @@ function getDragAfterElement(container, y) {
 
 function toggleTema() {
   const body = document.body;
-  const isLight = body.style.background === '#f0f4f8';
+  const isLight = body.style.background === '#f8fafc' || body.style.background === '#f0f4f8';
   if (isLight) {
     body.style.background = '#08080f';
     body.style.backgroundImage = '';

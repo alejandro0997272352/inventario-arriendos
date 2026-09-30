@@ -334,6 +334,21 @@ tbody tr:last-child td { border-bottom: none; }
 .info-item .label { font-size: 0.7em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
 .info-item .value { font-size: 1em; font-weight: 600; color: var(--text-bright); }
 
+.db-status {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 600;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.db-status.local { background: rgba(251,191,36,0.15); color: var(--warning); }
+.db-status.cloud { background: rgba(52,211,153,0.15); color: var(--success); }
+
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(28px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
@@ -357,10 +372,12 @@ tbody tr:last-child td { border-bottom: none; }
   .btn-group .btn { flex: 1; justify-content: center; }
   .tabs { flex-direction: column; }
   .tab { text-align: center; }
+  .db-status { top: 10px; right: 10px; padding: 8px 12px; font-size: 0.75em; }
 }
 </style>
 </head>
 <body>
+<div class="db-status local" id="dbStatus">Almacenamiento Local</div>
 <div class="container">
   <div class="header">
     <h1>Inventario de Pagos de Arriendos</h1>
@@ -411,12 +428,11 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="card-title">&#128203; Nuevo Registro</div>
     <form id="pagoForm">
       <div class="form-grid">
-        <div class="form-group"><label>Código Unidad *</label><input type="text" id="codigo" required placeholder="DEP-01, LOC-01"></div>
+        <div class="form-group"><label>Código Unidad *</label><select id="codigo" required><option value="">Seleccionar...</option><option value="DEP-01">DEP-01</option><option value="DEP-02">DEP-02</option><option value="DEP-03">DEP-03</option><option value="DEP-04">DEP-04</option><option value="DEP-05">DEP-05</option><option value="DEP-06">DEP-06</option><option value="DEP-07">DEP-07</option><option value="DEP-08">DEP-08</option><option value="DEP-09">DEP-09</option><option value="DEP-10">DEP-10</option><option value="DEP-11">DEP-11</option><option value="DEP-12">DEP-12</option><option value="LOC-01">LOC-01</option><option value="LOC-02">LOC-02</option></select></div>
         <div class="form-group"><label>Tipo *</label><select id="tipo"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
         <div class="form-group"><label>Tamaño</label><select id="tamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
         <div class="form-group"><label>Arrendatario *</label><input type="text" id="arrendatario" required placeholder="Nombre completo"></div>
         <div class="form-group"><label>Teléfono</label><input type="tel" id="telefono" placeholder="+56 9 1234 5678"></div>
-        <div class="form-group"><label>Universidad</label><input type="text" id="universidad" placeholder="Universidad del estudiante"></div>
         <div class="form-group"><label>Mes de Pago *</label><input type="month" id="mesPago" required></div>
         <div class="form-group"><label>Meses Totales de Arriendo *</label><input type="number" id="mesesTotales" required min="1" max="60" placeholder="Ej: 12"></div>
         <div class="form-group"><label>Monto *</label><input type="number" id="monto" required min="0" step="0.01" placeholder="0.00"></div>
@@ -439,11 +455,11 @@ tbody tr:last-child td { border-bottom: none; }
   <div class="card glass">
     <div class="card-title">&#128202; Registros</div>
     <div class="tabs">
-      <div class="tab active" onclick="setTab('todos')">Todos</div>
-      <div class="tab" onclick="setTab('departamentos')">Departamentos</div>
-      <div class="tab" onclick="setTab('locales')">Locales</div>
-      <div class="tab" onclick="setTab('atrasados')">Atrasados</div>
-      <div class="tab" onclick="setTab('aldia')">Al Día</div>
+      <div class="tab active" onclick="setTab('todos', event)">Todos</div>
+      <div class="tab" onclick="setTab('departamentos', event)">Departamentos</div>
+      <div class="tab" onclick="setTab('locales', event)">Locales</div>
+      <div class="tab" onclick="setTab('atrasados', event)">Atrasados</div>
+      <div class="tab" onclick="setTab('aldia', event)">Al Día</div>
     </div>
     <div class="search-bar">
       <input type="text" id="buscar" placeholder="Buscar por nombre, código..." oninput="renderTabla()">
@@ -506,12 +522,11 @@ tbody tr:last-child td { border-bottom: none; }
     <form id="editForm">
       <input type="hidden" id="editId">
       <div class="form-grid">
-        <div class="form-group"><label>Código Unidad *</label><input type="text" id="editCodigo" required></div>
+        <div class="form-group"><label>Código Unidad *</label><select id="editCodigo" required><option value="">Seleccionar...</option><option value="DEP-01">DEP-01</option><option value="DEP-02">DEP-02</option><option value="DEP-03">DEP-03</option><option value="DEP-04">DEP-04</option><option value="DEP-05">DEP-05</option><option value="DEP-06">DEP-06</option><option value="DEP-07">DEP-07</option><option value="DEP-08">DEP-08</option><option value="DEP-09">DEP-09</option><option value="DEP-10">DEP-10</option><option value="DEP-11">DEP-11</option><option value="DEP-12">DEP-12</option><option value="LOC-01">LOC-01</option><option value="LOC-02">LOC-02</option></select></div>
         <div class="form-group"><label>Tipo *</label><select id="editTipo"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
         <div class="form-group"><label>Tamaño</label><select id="editTamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
         <div class="form-group"><label>Arrendatario *</label><input type="text" id="editArrendatario" required></div>
         <div class="form-group"><label>Teléfono</label><input type="tel" id="editTelefono"></div>
-        <div class="form-group"><label>Universidad</label><input type="text" id="editUniversidad"></div>
         <div class="form-group"><label>Mes de Pago *</label><input type="month" id="editMesPago" required></div>
         <div class="form-group"><label>Meses Totales *</label><input type="number" id="editMesesTotales" required min="1" max="60"></div>
         <div class="form-group"><label>Monto *</label><input type="number" id="editMonto" required min="0" step="0.01"></div>
@@ -558,44 +573,71 @@ tbody tr:last-child td { border-bottom: none; }
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
-const SUPABASE_ANON_KEY = 'tu-anon-key';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const DB_NAME = 'InventarioArriendos';
+const STORE = 'pagos';
+let db;
 let chartInstance = null;
 let currentTab = 'todos';
+let useSupabase = false;
+let supabaseClient = null;
 
-async function initDB() {
-  const { error } = await supabaseClient.from('pagos').select('id').limit(1);
-  if (error && error.code === '42P01') {
-    showToast('Creando tabla en Supabase...', 'success');
-  }
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(); };
+    req.onerror = (e) => reject(e.target.error);
+  });
 }
 
-async function getAll() {
-  const { data, error } = await supabaseClient.from('pagos').select('*');
-  if (error) throw error;
-  return data || [];
+function getAll() {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
-async function add(record) {
-  const { data, error } = await supabaseClient.from('pagos').insert([record]).select();
-  if (error) throw error;
-  return data[0];
+function add(record) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).add(record);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
-async function put(record) {
-  const { error } = await supabaseClient.from('pagos').update(record).eq('id', record.id);
-  if (error) throw error;
+function put(record) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).put(record);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
 }
 
-async function del(id) {
-  const { error } = await supabaseClient.from('pagos').delete().eq('id', id);
-  if (error) throw error;
+function del(id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
 }
 
-async function clearAll() {
-  const { error } = await supabaseClient.from('pagos').delete().neq('id', 0);
-  if (error) throw error;
+function clearAll() {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
 }
 
 function formatCurrency(val) {
@@ -631,11 +673,7 @@ function aplicarCapitalizacion(id) {
 }
 
 aplicarCapitalizacion('arrendatario');
-aplicarCapitalizacion('codigo');
-aplicarCapitalizacion('universidad');
 aplicarCapitalizacion('editArrendatario');
-aplicarCapitalizacion('editCodigo');
-aplicarCapitalizacion('editUniversidad');
 
 function previewComprobante(input) {
   const container = document.getElementById('previewContainer');
@@ -678,10 +716,10 @@ function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
   });
 }
 
-function setTab(tab) {
+function setTab(tab, event) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
+  if (event && event.target) event.target.classList.add('active');
   renderTabla();
 }
 
@@ -700,71 +738,76 @@ function calcularSaldo(d) {
 }
 
 async function renderTabla() {
-  const datos = await getAll();
-  const buscar = document.getElementById('buscar').value.toLowerCase();
-  const filtroEstado = document.getElementById('filtroEstado').value;
-  const filtroMes = document.getElementById('filtroMes').value;
+  try {
+    const datos = await getAll();
+    const buscar = document.getElementById('buscar').value.toLowerCase();
+    const filtroEstado = document.getElementById('filtroEstado').value;
+    const filtroMes = document.getElementById('filtroMes').value;
 
-  let filtrados = datos.filter(d => {
-    const matchBuscar = !buscar || (d.arrendatario || '').toLowerCase().includes(buscar) || (d.codigo || '').toLowerCase().includes(buscar);
-    const matchEstado = !filtroEstado || d.estado === filtroEstado;
-    const matchMes = !filtroMes || d.mesPago === filtroMes;
-    let matchTab = true;
-    if (currentTab === 'departamentos') matchTab = d.tipo === 'departamento';
-    else if (currentTab === 'locales') matchTab = d.tipo === 'local';
-    else if (currentTab === 'atrasados') matchTab = d.estado === 'pendiente';
-    else if (currentTab === 'aldia') matchTab = (d.mesesPagados || []).length >= (d.mesesTotales || 12);
-    return matchBuscar && matchEstado && matchMes && matchTab;
-  });
+    let filtrados = datos.filter(d => {
+      const matchBuscar = !buscar || (d.arrendatario || '').toLowerCase().includes(buscar) || (d.codigo || '').toLowerCase().includes(buscar);
+      const matchEstado = !filtroEstado || d.estado === filtroEstado;
+      const matchMes = !filtroMes || d.mesPago === filtroMes;
+      let matchTab = true;
+      if (currentTab === 'departamentos') matchTab = d.tipo === 'departamento';
+      else if (currentTab === 'locales') matchTab = d.tipo === 'local';
+      else if (currentTab === 'atrasados') matchTab = d.estado === 'pendiente';
+      else if (currentTab === 'aldia') matchTab = (d.mesesPagados || []).length >= (d.mesesTotales || 12);
+      return matchBuscar && matchEstado && matchMes && matchTab;
+    });
 
-  filtrados.sort((a, b) => (a.mesPago || '').localeCompare(b.mesPago || ''));
+    filtrados.sort((a, b) => (a.mesPago || '').localeCompare(b.mesPago || ''));
 
-  const tbody = document.getElementById('tablaBody');
-  const empty = document.getElementById('emptyState');
+    const tbody = document.getElementById('tablaBody');
+    const empty = document.getElementById('emptyState');
 
-  if (filtrados.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-  } else {
-    empty.style.display = 'none';
-    tbody.innerHTML = filtrados.map(d => {
-      const totales = d.mesesTotales || 12;
-      const mesesPagados = d.mesesPagados || [];
-      const pagados = Math.min(mesesPagados.length, totales);
-      const circulos = Array.from({ length: totales }, (_, i) =>
-        `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin:1px;border:2px solid rgba(255,255,255,0.15);background:${i < pagados ? 'var(--success)' : 'transparent'};box-shadow:${i < pagados ? '0 0 4px var(--success-glow)' : 'none'};"></span>`
-      ).join('');
-      const saldo = calcularSaldo(d);
-      const estadoAlerta = getEstadoAlerta(d);
-      return `
-      <tr>
-        <td><strong style="color:var(--text-bright)">${esc(d.codigo)}</strong></td>
-        <td><span class="badge badge-${d.tipo === 'departamento' ? 'departamento' : 'local'}">${d.tipo === 'departamento' ? 'Dep' : 'Local'}</span></td>
-        <td><strong style="color:var(--text-bright)">${esc(d.arrendatario)}</strong></td>
-        <td><div style="display:flex;flex-wrap:wrap;gap:2px;max-width:100px;">${circulos}</div><span style="font-size:0.72em;color:var(--text-muted);margin-left:4px;">${pagados}/${totales}</span></td>
-        <td>${formatMes(d.mesPago)}</td>
-        <td>${formatCurrency(d.monto)}</td>
-        <td style="color:${saldo > 0 ? 'var(--danger)' : 'var(--success)'};font-weight:600;">${saldo > 0 ? formatCurrency(saldo) : 'Al día'}</td>
-        <td><span class="badge badge-${estadoAlerta}">${estadoAlerta === 'aldia' ? 'Al Día' : estadoAlerta === 'atrasado' ? 'Atrasado' : 'Atención'}</span></td>
-        <td>${d.metodoPago || '-'}</td>
-        <td>${d.comprobante ? `<img src="${d.comprobante}" onclick="verComprobante('${d.id}')" style="width:36px;height:36px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);">` : '-'}</td>
-        <td>
-          <div class="row-actions">
-            <button class="btn btn-primary" onclick="abrirEditar(${d.id})">Editar</button>
-            <button class="btn btn-success" onclick="verHistorial(${d.id})">Historial</button>
-            <button class="btn btn-warning" onclick="verRecibo(${d.id})">Recibo</button>
-            <button class="btn btn-danger" onclick="eliminarRegistro(${d.id})">Eliminar</button>
-          </div>
-        </td>
-      </tr>
-    `;
-    }).join('');
+    if (filtrados.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      tbody.innerHTML = filtrados.map(d => {
+        const totales = d.mesesTotales || 12;
+        const mesesPagados = d.mesesPagados || [];
+        const pagados = Math.min(mesesPagados.length, totales);
+        const circulos = Array.from({ length: totales }, (_, i) =>
+          `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin:1px;border:2px solid rgba(255,255,255,0.15);background:${i < pagados ? 'var(--success)' : 'transparent'};box-shadow:${i < pagados ? '0 0 4px var(--success-glow)' : 'none'};"></span>`
+        ).join('');
+        const saldo = calcularSaldo(d);
+        const estadoAlerta = getEstadoAlerta(d);
+        return `
+        <tr>
+          <td><strong style="color:var(--text-bright)">${esc(d.codigo)}</strong></td>
+          <td><span class="badge badge-${d.tipo === 'departamento' ? 'departamento' : 'local'}">${d.tipo === 'departamento' ? 'Dep' : 'Local'}</span></td>
+          <td><strong style="color:var(--text-bright)">${esc(d.arrendatario)}</strong></td>
+          <td><div style="display:flex;flex-wrap:wrap;gap:2px;max-width:100px;">${circulos}</div><span style="font-size:0.72em;color:var(--text-muted);margin-left:4px;">${pagados}/${totales}</span></td>
+          <td>${formatMes(d.mesPago)}</td>
+          <td>${formatCurrency(d.monto)}</td>
+          <td style="color:${saldo > 0 ? 'var(--danger)' : 'var(--success)'};font-weight:600;">${saldo > 0 ? formatCurrency(saldo) : 'Al día'}</td>
+          <td><span class="badge badge-${estadoAlerta}">${estadoAlerta === 'aldia' ? 'Al Día' : estadoAlerta === 'atrasado' ? 'Atrasado' : 'Atención'}</span></td>
+          <td>${d.metodoPago || '-'}</td>
+          <td>${d.comprobante ? `<img src="${d.comprobante}" onclick="verComprobante('${d.id}')" style="width:36px;height:36px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);">` : '-'}</td>
+          <td>
+            <div class="row-actions">
+              <button class="btn btn-primary" onclick="abrirEditar(${d.id})">Editar</button>
+              <button class="btn btn-success" onclick="verHistorial(${d.id})">Historial</button>
+              <button class="btn btn-warning" onclick="verRecibo(${d.id})">Recibo</button>
+              <button class="btn btn-danger" onclick="eliminarRegistro(${d.id})">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      `;
+      }).join('');
+    }
+
+    actualizarDashboard(datos);
+    actualizarAlertas(datos);
+    actualizarFiltroMes(datos);
+    actualizarGrafico(datos);
+  } catch (error) {
+    console.error('Error en renderTabla:', error);
+    showToast('Error al cargar datos: ' + error.message, 'error');
   }
-
-  actualizarDashboard(datos);
-  actualizarAlertas(datos);
-  actualizarFiltroMes(datos);
-  actualizarGrafico(datos);
 }
 
 function esc(str) {
@@ -874,76 +917,83 @@ function limpiarFormulario() {
 
 document.getElementById('pagoForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  let comprobante = null;
-  const fileInput = document.getElementById('comprobante');
-  if (fileInput.files && fileInput.files[0]) {
-    const reader = new FileReader();
-    const dataUrl = await new Promise((resolve) => {
-      reader.onload = (e) => resolve(e.target.result);
-      reader.readAsDataURL(fileInput.files[0]);
-    });
-    comprobante = await compressImage(dataUrl);
-  }
-  const arrendatario = document.getElementById('arrendatario').value.trim();
-  const codigo = document.getElementById('codigo').value.trim();
-  const mesPago = document.getElementById('mesPago').value;
-  const datos = await getAll();
-  const existente = datos.find(d => d.arrendatario.toLowerCase() === arrendatario.toLowerCase() || d.codigo.toLowerCase() === codigo.toLowerCase());
-
-  if (existente) {
-    if (!existente.mesesPagados) existente.mesesPagados = [];
-    if (existente.estado === 'pagado' && !existente.mesesPagados.includes(mesPago)) {
-      existente.mesesPagados.push(mesPago);
+  try {
+    let comprobante = null;
+    const fileInput = document.getElementById('comprobante');
+    if (fileInput.files && fileInput.files[0]) {
+      const reader = new FileReader();
+      const dataUrl = await new Promise((resolve) => {
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(fileInput.files[0]);
+      });
+      comprobante = await compressImage(dataUrl);
     }
-    existente.mesPago = mesPago;
-    existente.mesesTotales = parseInt(document.getElementById('mesesTotales').value);
-    const nuevoMonto = parseFloat(document.getElementById('monto').value);
-    existente.monto = (existente.monto || 0) + nuevoMonto;
-    existente.fechaPago = document.getElementById('fechaPago').value || null;
-    existente.estado = document.getElementById('estado').value;
-    existente.metodoPago = document.getElementById('metodoPago').value;
-    existente.deposito = parseFloat(document.getElementById('deposito').value) || 0;
-    existente.fechaInicio = document.getElementById('fechaInicio').value || null;
-    existente.fechaFin = document.getElementById('fechaFin').value || null;
-    existente.telefono = document.getElementById('telefono').value.trim();
-    existente.universidad = document.getElementById('universidad').value.trim();
-    existente.tamano = document.getElementById('tamano').value;
-    if (comprobante) existente.comprobante = comprobante;
-    await put(existente);
-    showToast(`Mes ${formatMes(mesPago)} registrado para ${arrendatario}`);
-  } else {
-    const registro = {
-      codigo: codigo,
-      tipo: document.getElementById('tipo').value,
-      tamano: document.getElementById('tamano').value,
-      arrendatario: arrendatario,
-      telefono: document.getElementById('telefono').value.trim(),
-      universidad: document.getElementById('universidad').value.trim(),
-      mesPago: mesPago,
-      mesesPagados: document.getElementById('estado').value === 'pagado' ? [mesPago] : [],
-      mesesTotales: parseInt(document.getElementById('mesesTotales').value),
-      monto: parseFloat(document.getElementById('monto').value),
-      fechaPago: document.getElementById('fechaPago').value || null,
-      estado: document.getElementById('estado').value,
-      metodoPago: document.getElementById('metodoPago').value,
-      deposito: parseFloat(document.getElementById('deposito').value) || 0,
-      fechaInicio: document.getElementById('fechaInicio').value || null,
-      fechaFin: document.getElementById('fechaFin').value || null,
-      comprobante: comprobante,
-      creado: new Date().toISOString()
-    };
-    await add(registro);
-    showToast('Registro agregado correctamente');
+    const arrendatario = document.getElementById('arrendatario').value.trim();
+    const codigo = document.getElementById('codigo').value.trim();
+    const mesPago = document.getElementById('mesPago').value;
+    const datos = await getAll();
+    const existente = datos.find(d => d.arrendatario.toLowerCase() === arrendatario.toLowerCase() || d.codigo.toLowerCase() === codigo.toLowerCase());
+
+    if (existente) {
+      if (!existente.mesesPagados) existente.mesesPagados = [];
+      if (existente.estado === 'pagado' && !existente.mesesPagados.includes(mesPago)) {
+        existente.mesesPagados.push(mesPago);
+      }
+      existente.mesPago = mesPago;
+      existente.mesesTotales = parseInt(document.getElementById('mesesTotales').value);
+      const nuevoMonto = parseFloat(document.getElementById('monto').value);
+      existente.monto = (existente.monto || 0) + nuevoMonto;
+      existente.fechaPago = document.getElementById('fechaPago').value || null;
+      existente.estado = document.getElementById('estado').value;
+      existente.metodoPago = document.getElementById('metodoPago').value;
+      existente.deposito = parseFloat(document.getElementById('deposito').value) || 0;
+      existente.fechaInicio = document.getElementById('fechaInicio').value || null;
+      existente.fechaFin = document.getElementById('fechaFin').value || null;
+      existente.telefono = document.getElementById('telefono').value.trim();
+      existente.tamano = document.getElementById('tamano').value;
+      if (comprobante) existente.comprobante = comprobante;
+      await put(existente);
+      showToast(`Mes ${formatMes(mesPago)} registrado para ${arrendatario}`);
+    } else {
+      const registro = {
+        codigo: codigo,
+        tipo: document.getElementById('tipo').value,
+        tamano: document.getElementById('tamano').value,
+        arrendatario: arrendatario,
+        telefono: document.getElementById('telefono').value.trim(),
+        mesPago: mesPago,
+        mesesPagados: document.getElementById('estado').value === 'pagado' ? [mesPago] : [],
+        mesesTotales: parseInt(document.getElementById('mesesTotales').value),
+        monto: parseFloat(document.getElementById('monto').value),
+        fechaPago: document.getElementById('fechaPago').value || null,
+        estado: document.getElementById('estado').value,
+        metodoPago: document.getElementById('metodoPago').value,
+        deposito: parseFloat(document.getElementById('deposito').value) || 0,
+        fechaInicio: document.getElementById('fechaInicio').value || null,
+        fechaFin: document.getElementById('fechaFin').value || null,
+        comprobante: comprobante,
+        creado: new Date().toISOString()
+      };
+      await add(registro);
+      showToast('Registro agregado correctamente');
+    }
+    limpiarFormulario();
+    renderTabla();
+  } catch (error) {
+    console.error('Error al guardar:', error);
+    showToast('Error al guardar: ' + error.message, 'error');
   }
-  limpiarFormulario();
-  renderTabla();
 });
 
 async function eliminarRegistro(id) {
   if (!confirm('¿Eliminar este registro?')) return;
-  await del(id);
-  renderTabla();
-  showToast('Registro eliminado');
+  try {
+    await del(id);
+    renderTabla();
+    showToast('Registro eliminado');
+  } catch (error) {
+    showToast('Error al eliminar: ' + error.message, 'error');
+  }
 }
 
 function abrirEditar(id) {
@@ -956,7 +1006,6 @@ function abrirEditar(id) {
     document.getElementById('editTamano').value = d.tamano || 'estandar';
     document.getElementById('editArrendatario').value = d.arrendatario;
     document.getElementById('editTelefono').value = d.telefono || '';
-    document.getElementById('editUniversidad').value = d.universidad || '';
     document.getElementById('editMesPago').value = d.mesPago;
     document.getElementById('editMesesTotales').value = d.mesesTotales || 12;
     document.getElementById('editMonto').value = d.monto;
@@ -977,6 +1026,8 @@ function abrirEditar(id) {
     }
     document.getElementById('editComprobante').value = '';
     document.getElementById('editModal').classList.add('active');
+  }).catch(error => {
+    showToast('Error al abrir edición: ' + error.message, 'error');
   });
 }
 
@@ -986,54 +1037,62 @@ function cerrarModal() {
 
 document.getElementById('editForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const id = parseInt(document.getElementById('editId').value);
-  const datos = await getAll();
-  const original = datos.find(x => x.id === id);
-  if (!original) return;
-  const fileInput = document.getElementById('editComprobante');
-  if (fileInput.files && fileInput.files[0]) {
-    const reader = new FileReader();
-    const dataUrl = await new Promise((resolve) => {
-      reader.onload = (e) => resolve(e.target.result);
-      reader.readAsDataURL(fileInput.files[0]);
+  try {
+    const id = parseInt(document.getElementById('editId').value);
+    const datos = await getAll();
+    const original = datos.find(x => x.id === id);
+    if (!original) return;
+    const fileInput = document.getElementById('editComprobante');
+    if (fileInput.files && fileInput.files[0]) {
+      const reader = new FileReader();
+      const dataUrl = await new Promise((resolve) => {
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(fileInput.files[0]);
+      });
+      original.comprobante = await compressImage(dataUrl);
+    }
+    const mesPago = document.getElementById('editMesPago').value;
+    const estado = document.getElementById('editEstado').value;
+    if (!original.mesesPagados) original.mesesPagados = [];
+    if (estado === 'pagado' && !original.mesesPagados.includes(mesPago)) {
+      original.mesesPagados.push(mesPago);
+    }
+    const nuevoMonto = parseFloat(document.getElementById('editMonto').value);
+    Object.assign(original, {
+      codigo: document.getElementById('editCodigo').value.trim(),
+      tipo: document.getElementById('editTipo').value,
+      tamano: document.getElementById('editTamano').value,
+      arrendatario: document.getElementById('editArrendatario').value.trim(),
+      telefono: document.getElementById('editTelefono').value.trim(),
+      mesPago: mesPago,
+      mesesTotales: parseInt(document.getElementById('editMesesTotales').value),
+      monto: (original.monto || 0) + nuevoMonto,
+      fechaPago: document.getElementById('editFechaPago').value || null,
+      estado: estado,
+      metodoPago: document.getElementById('editMetodoPago').value,
+      deposito: parseFloat(document.getElementById('editDeposito').value) || 0,
+      fechaInicio: document.getElementById('editFechaInicio').value || null,
+      fechaFin: document.getElementById('editFechaFin').value || null
     });
-    original.comprobante = await compressImage(dataUrl);
+    await put(original);
+    cerrarModal();
+    renderTabla();
+    showToast('Registro actualizado');
+  } catch (error) {
+    console.error('Error al actualizar:', error);
+    showToast('Error al actualizar: ' + error.message, 'error');
   }
-  const mesPago = document.getElementById('editMesPago').value;
-  const estado = document.getElementById('editEstado').value;
-  if (!original.mesesPagados) original.mesesPagados = [];
-  if (estado === 'pagado' && !original.mesesPagados.includes(mesPago)) {
-    original.mesesPagados.push(mesPago);
-  }
-  const nuevoMonto = parseFloat(document.getElementById('editMonto').value);
-  Object.assign(original, {
-    codigo: document.getElementById('editCodigo').value.trim(),
-    tipo: document.getElementById('editTipo').value,
-    tamano: document.getElementById('editTamano').value,
-    arrendatario: document.getElementById('editArrendatario').value.trim(),
-    telefono: document.getElementById('editTelefono').value.trim(),
-    universidad: document.getElementById('editUniversidad').value.trim(),
-    mesPago: mesPago,
-    mesesTotales: parseInt(document.getElementById('editMesesTotales').value),
-    monto: (original.monto || 0) + nuevoMonto,
-    fechaPago: document.getElementById('editFechaPago').value || null,
-    estado: estado,
-    metodoPago: document.getElementById('editMetodoPago').value,
-    deposito: parseFloat(document.getElementById('editDeposito').value) || 0,
-    fechaInicio: document.getElementById('editFechaInicio').value || null,
-    fechaFin: document.getElementById('editFechaFin').value || null
-  });
-  await put(original);
-  cerrarModal();
-  renderTabla();
-  showToast('Registro actualizado');
 });
 
 async function eliminarTodo() {
   if (!confirm('¿Eliminar TODOS los registros? Esta acción no se puede deshacer.')) return;
-  await clearAll();
-  renderTabla();
-  showToast('Todos los registros eliminados');
+  try {
+    await clearAll();
+    renderTabla();
+    showToast('Todos los registros eliminados');
+  } catch (error) {
+    showToast('Error al eliminar: ' + error.message, 'error');
+  }
 }
 
 function verHistorial(id) {
@@ -1046,7 +1105,6 @@ function verHistorial(id) {
         <div class="info-item"><div class="label">Unidad</div><div class="value">${esc(d.codigo)}</div></div>
         <div class="info-item"><div class="label">Arrendatario</div><div class="value">${esc(d.arrendatario)}</div></div>
         <div class="info-item"><div class="label">Teléfono</div><div class="value">${esc(d.telefono || '-')}</div></div>
-        <div class="info-item"><div class="label">Universidad</div><div class="value">${esc(d.universidad || '-')}</div></div>
         <div class="info-item"><div class="label">Tipo</div><div class="value">${d.tipo === 'departamento' ? 'Departamento' : 'Local Comercial'}</div></div>
         <div class="info-item"><div class="label">Tamaño</div><div class="value">${d.tamano === 'grande' ? 'Grande' : 'Estándar'}</div></div>
         <div class="info-item"><div class="label">Monto Mensual</div><div class="value">${formatCurrency(d.monto)}</div></div>
@@ -1062,6 +1120,8 @@ function verHistorial(id) {
     `;
     document.getElementById('historialContent').innerHTML = html;
     document.getElementById('historialModal').classList.add('active');
+  }).catch(error => {
+    showToast('Error al ver historial: ' + error.message, 'error');
   });
 }
 
@@ -1086,6 +1146,8 @@ function verRecibo(id) {
     `;
     document.getElementById('reciboContent').innerHTML = html;
     document.getElementById('reciboModal').classList.add('active');
+  }).catch(error => {
+    showToast('Error al ver recibo: ' + error.message, 'error');
   });
 }
 
@@ -1109,6 +1171,8 @@ function verComprobante(id) {
     img.style.cssText = 'max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.5);';
     overlay.appendChild(img);
     document.body.appendChild(overlay);
+  }).catch(error => {
+    showToast('Error al ver comprobante: ' + error.message, 'error');
   });
 }
 
@@ -1125,11 +1189,13 @@ function descargar(filename, content, mime) {
 function exportarCSV() {
   getAll().then(datos => {
     if (datos.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-    const headers = ['Código','Tipo','Tamaño','Arrendatario','Teléfono','Universidad','Mes de Pago','Meses Pagados','Meses Totales','Monto','Fecha de Pago','Estado','Método de Pago','Depósito','Fecha Inicio','Fecha Fin','Comprobante'];
-    const rows = datos.map(d => [d.codigo, d.tipo, d.tamano, d.arrendatario, d.telefono || '', d.universidad || '', d.mesPago, (d.mesesPagados || []).join(';'), d.mesesTotales || 12, d.monto, d.fechaPago || '', d.estado, d.metodoPago || '', d.deposito || 0, d.fechaInicio || '', d.fechaFin || '', d.comprobante ? 'Sí' : 'No']);
+    const headers = ['Código','Tipo','Tamaño','Arrendatario','Teléfono','Mes de Pago','Meses Pagados','Meses Totales','Monto','Fecha de Pago','Estado','Método de Pago','Depósito','Fecha Inicio','Fecha Fin','Comprobante'];
+    const rows = datos.map(d => [d.codigo, d.tipo, d.tamano, d.arrendatario, d.telefono || '', d.mesPago, (d.mesesPagados || []).join(';'), d.mesesTotales || 12, d.monto, d.fechaPago || '', d.estado, d.metodoPago || '', d.deposito || 0, d.fechaInicio || '', d.fechaFin || '', d.comprobante ? 'Sí' : 'No']);
     const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     descargar('inventario_arriendos.csv', '\uFEFF' + csv, 'text/csv;charset=utf-8');
     showToast('CSV exportado');
+  }).catch(error => {
+    showToast('Error al exportar: ' + error.message, 'error');
   });
 }
 
@@ -1138,6 +1204,8 @@ function exportarJSON() {
     if (datos.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
     descargar('inventario_arriendos.json', JSON.stringify(datos, null, 2), 'application/json');
     showToast('JSON exportado');
+  }).catch(error => {
+    showToast('Error al exportar: ' + error.message, 'error');
   });
 }
 
@@ -1164,7 +1232,6 @@ function importarArchivo(event) {
           tamano: d.tamano || 'estandar',
           arrendatario: d.arrendatario || '',
           telefono: d.telefono || '',
-          universidad: d.universidad || '',
           mesPago: d.mesPago || '',
           mesesPagados: d.mesesPagados || [],
           mesesTotales: parseInt(d.mesesTotales) || 12,
@@ -1202,7 +1269,6 @@ function parseCSV(text) {
       else if (h.includes('tamaño') || h.includes('tamano')) obj.tamano = vals[i] || 'estandar';
       else if (h.includes('arrendatario')) obj.arrendatario = vals[i] || '';
       else if (h.includes('teléfono') || h.includes('telefono')) obj.telefono = vals[i] || '';
-      else if (h.includes('universidad')) obj.universidad = vals[i] || '';
       else if (h.includes('mes de pago') || h.includes('mes_pago')) obj.mesPago = vals[i] || '';
       else if (h.includes('meses pagados') || h.includes('meses_pagados')) obj.mesesPagados = vals[i] ? vals[i].split(';').filter(Boolean) : [];
       else if (h.includes('meses totales') || h.includes('meses_totales')) obj.mesesTotales = vals[i] || '12';
@@ -1223,7 +1289,10 @@ document.getElementById('editModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) cerrarModal();
 });
 
-initDB().then(() => renderTabla());
+initDB().then(() => renderTabla()).catch(error => {
+  console.error('Error inicializando DB:', error);
+  showToast('Error al iniciar: ' + error.message, 'error');
+});
 </script>
 </body>
 </html>

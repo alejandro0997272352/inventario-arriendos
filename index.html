@@ -1213,16 +1213,35 @@ document.getElementById('pagoForm').addEventListener('submit', async (e) => {
   }
 });
 
-async function eliminarRegistro(id) {
-  if (!confirm('¿Eliminar este registro?')) return;
-  try {
-    await del(id);
-    registrarActividad('eliminar', `ID: ${id}`);
-    renderTabla();
-    showToast('Registro eliminado');
-  } catch (error) {
-    showToast('Error al eliminar: ' + error.message, 'error');
-  }
+function eliminarRegistro(id) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;justify-content:center;align-items:center;backdrop-filter:blur(8px);animation:fadeIn 0.3s ease;';
+  overlay.innerHTML = `
+    <div style="background:rgba(18,18,32,0.95);backdrop-filter:blur(40px);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:32px;max-width:400px;width:90%;animation:slideUp 0.4s cubic-bezier(0.4,0,0.2,1);box-shadow:0 25px 50px rgba(0,0,0,0.5);text-align:center;">
+      <div style="font-size:3em;margin-bottom:16px;">&#128465;</div>
+      <h3 style="color:var(--text-bright);margin-bottom:8px;font-size:1.2em;">¿Eliminar registro?</h3>
+      <p style="color:var(--text-muted);font-size:0.9em;margin-bottom:24px;">Esta acción no se puede deshacer</p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button id="confirmDelete" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;font-weight:600;cursor:pointer;font-size:0.9em;transition:all 0.3s;">Eliminar</button>
+        <button id="cancelDelete" style="padding:12px 24px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:rgba(255,255,255,0.04);color:var(--text-muted);font-weight:600;cursor:pointer;font-size:0.9em;transition:all 0.3s;">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelDelete').onclick = () => { overlay.style.opacity = '0'; overlay.style.transition = 'opacity 0.3s'; setTimeout(() => overlay.remove(), 300); };
+  overlay.querySelector('#confirmDelete').onclick = async () => {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.3s';
+    setTimeout(() => overlay.remove(), 300);
+    try {
+      await del(id);
+      registrarActividad('eliminar', `ID: ${id}`);
+      renderTabla();
+      showToast('Registro eliminado');
+    } catch (error) {
+      showToast('Error al eliminar: ' + error.message, 'error');
+    }
+  };
 }
 
 function abrirEditar(id) {
@@ -1310,15 +1329,34 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
   }
 });
 
-async function eliminarTodo() {
-  if (!confirm('¿Eliminar TODOS los registros? Esta acción no se puede deshacer.')) return;
-  try {
-    await clearAll();
-    renderTabla();
-    showToast('Todos los registros eliminados');
-  } catch (error) {
-    showToast('Error al eliminar: ' + error.message, 'error');
-  }
+function eliminarTodo() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;justify-content:center;align-items:center;backdrop-filter:blur(8px);animation:fadeIn 0.3s ease;';
+  overlay.innerHTML = `
+    <div style="background:rgba(18,18,32,0.95);backdrop-filter:blur(40px);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:32px;max-width:400px;width:90%;animation:slideUp 0.4s cubic-bezier(0.4,0,0.2,1);box-shadow:0 25px 50px rgba(0,0,0,0.5);text-align:center;">
+      <div style="font-size:3em;margin-bottom:16px;">&#9888;</div>
+      <h3 style="color:var(--text-bright);margin-bottom:8px;font-size:1.2em;">¿Eliminar TODOS los registros?</h3>
+      <p style="color:var(--text-muted);font-size:0.9em;margin-bottom:24px;">Esta acción no se puede deshacer</p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button id="confirmDeleteAll" style="padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;font-weight:600;cursor:pointer;font-size:0.9em;transition:all 0.3s;">Eliminar Todo</button>
+        <button id="cancelDeleteAll" style="padding:12px 24px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:rgba(255,255,255,0.04);color:var(--text-muted);font-weight:600;cursor:pointer;font-size:0.9em;transition:all 0.3s;">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelDeleteAll').onclick = () => { overlay.style.opacity = '0'; overlay.style.transition = 'opacity 0.3s'; setTimeout(() => overlay.remove(), 300); };
+  overlay.querySelector('#confirmDeleteAll').onclick = async () => {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.3s';
+    setTimeout(() => overlay.remove(), 300);
+    try {
+      await clearAll();
+      renderTabla();
+      showToast('Todos los registros eliminados');
+    } catch (error) {
+      showToast('Error al eliminar: ' + error.message, 'error');
+    }
+  };
 }
 
 function verHistorial(id) {

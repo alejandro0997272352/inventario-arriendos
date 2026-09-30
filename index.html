@@ -1238,29 +1238,50 @@ function importarArchivo(event) {
 }
 
 function parseCSV(text) {
-  const lines = text.split('\n').filter(l => l.trim());
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+  const parseLine = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+  const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/"/g, '').trim());
   return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    const vals = parseLine(line).map(v => v.replace(/^"|"$/g, ''));
     const obj = {};
     headers.forEach((h, i) => {
-      if (h.includes('código') || h.includes('codigo')) obj.codigo = vals[i] || '';
-      else if (h.includes('tipo')) obj.tipo = vals[i] || 'departamento';
-      else if (h.includes('tamaño') || h.includes('tamano')) obj.tamano = vals[i] || 'estandar';
-      else if (h.includes('arrendatario')) obj.arrendatario = vals[i] || '';
-      else if (h.includes('teléfono') || h.includes('telefono')) obj.telefono = vals[i] || '';
-      else if (h.includes('mes de pago') || h.includes('mes_pago')) obj.mesPago = vals[i] || '';
-      else if (h.includes('meses pagados') || h.includes('meses_pagados')) obj.mesesPagados = vals[i] ? vals[i].split(';').filter(Boolean) : [];
-      else if (h.includes('meses totales') || h.includes('meses_totales')) obj.mesesTotales = vals[i] || '12';
-      else if (h.includes('monto')) obj.monto = vals[i] || '0';
-      else if (h.includes('fecha de pago') || h.includes('fecha_pago')) obj.fechaPago = vals[i] || null;
-      else if (h.includes('estado')) obj.estado = vals[i] || 'pendiente';
-      else if (h.includes('método') || h.includes('metodo')) obj.metodoPago = vals[i] || 'transferencia';
-      else if (h.includes('depósito') || h.includes('deposito')) obj.deposito = vals[i] || '0';
-      else if (h.includes('fecha inicio') || h.includes('fecha_inicio')) obj.fechaInicio = vals[i] || null;
-      else if (h.includes('fecha fin') || h.includes('fecha_fin')) obj.fechaFin = vals[i] || null;
-      else if (h.includes('comprobante')) obj.comprobante = vals[i] === 'Sí' ? null : null;
+      const val = vals[i] || '';
+      if (h.includes('código') || h.includes('codigo')) obj.codigo = val;
+      else if (h.includes('tipo')) obj.tipo = val || 'departamento';
+      else if (h.includes('tamaño') || h.includes('tamano')) obj.tamano = val || 'estandar';
+      else if (h.includes('arrendatario')) obj.arrendatario = val;
+      else if (h.includes('teléfono') || h.includes('telefono')) obj.telefono = val;
+      else if (h.includes('mes de pago') || h.includes('mes_pago') || h.includes('mespago')) obj.mesPago = val;
+      else if (h.includes('meses pagados') || h.includes('meses_pagados') || h.includes('mesespagados')) obj.mesesPagados = val ? val.split(';').filter(Boolean) : [];
+      else if (h.includes('meses totales') || h.includes('meses_totales') || h.includes('mesestotales')) obj.mesesTotales = val || '12';
+      else if (h.includes('monto')) obj.monto = val || '0';
+      else if (h.includes('fecha de pago') || h.includes('fecha_pago') || h.includes('fechapago')) obj.fechaPago = val || null;
+      else if (h.includes('estado')) obj.estado = val || 'pendiente';
+      else if (h.includes('método') || h.includes('metodo') || h.includes('métodopago')) obj.metodoPago = val || 'transferencia';
+      else if (h.includes('depósito') || h.includes('deposito')) obj.deposito = val || '0';
+      else if (h.includes('fecha inicio') || h.includes('fecha_inicio') || h.includes('chainicio')) obj.fechaInicio = val || null;
+      else if (h.includes('fecha fin') || h.includes('fecha_fin') || h.includes('fechafin')) obj.fechaFin = val || null;
+      else if (h.includes('comprobante')) obj.comprobante = val === 'Sí' || val === 'Si' ? null : null;
     });
     return obj;
   });

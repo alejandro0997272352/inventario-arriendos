@@ -380,13 +380,15 @@ tbody tr:last-child td { border-bottom: none; }
 </head>
 <body>
 <div class="db-status local" id="dbStatus">Almacenamiento Local</div>
+<button onclick="toggleTema()" style="position:fixed;top:20px;left:20px;z-index:100;padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer;font-size:0.8em;font-weight:600;backdrop-filter:blur(20px);">&#127769; Tema</button>
+<button onclick="toggleDashboard()" style="position:fixed;top:20px;left:120px;z-index:100;padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer;font-size:0.8em;font-weight:600;backdrop-filter:blur(20px);">&#128202; Dashboard</button>
 <div class="container">
   <div class="header">
     <h1>Inventario de Pagos de Arriendos</h1>
     <p>12 Departamentos para estudiantes + 2 Locales comerciales</p>
   </div>
 
-  <div class="dashboard">
+  <div class="dashboard" id="dashboardContainer">
     <div class="stat-card glass">
       <div class="stat-icon">&#127968;</div>
       <div class="stat-value" id="statUnidades">0</div>
@@ -419,6 +421,12 @@ tbody tr:last-child td { border-bottom: none; }
       <div class="stat-value" id="statProximo">-</div>
       <div class="stat-label">Próximo Pago</div>
     </div>
+    <div class="stat-card glass">
+      <div class="stat-icon">&#128202;</div>
+      <div class="stat-value" id="statResumenMes">$0 / $0</div>
+      <div class="stat-label">Mes Actual (Pagado/Esperado)</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressMes" style="width:0%; background: var(--primary);"></div></div>
+    </div>
   </div>
 
   <div class="alert-panel" id="alertPanel" style="display:none;">
@@ -441,6 +449,7 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="form-group"><label>Fecha de Pago</label><input type="date" id="fechaPago"></div>
         <div class="form-group"><label>Estado *</label><select id="estado"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option></select></div>
         <div class="form-group"><label>Método de Pago</label><select id="metodoPago" onchange="toggleComprobante()"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select></div>
+        <div class="form-group"><label>Etiqueta</label><select id="etiqueta"><option value="">Ninguna</option><option value="rojo">Rojo</option><option value="amarillo">Amarillo</option><option value="verde">Verde</option><option value="azul">Azul</option></select></div>
 
         <div class="form-group"><label>Comprobante de Pago</label><input type="file" id="comprobante" accept="image/*" onchange="previewComprobante(this)"></div>
         <div class="form-group" id="previewContainer" style="display:none;"><label>Vista Previa</label><img id="previewImg" style="max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"></div>
@@ -471,7 +480,19 @@ tbody tr:last-child td { border-bottom: none; }
       <select id="filtroMes" onchange="renderTabla()">
         <option value="">Todos los meses</option>
       </select>
+      <input type="date" id="filtroFechaDesde" onchange="renderTabla()" title="Desde">
+      <input type="date" id="filtroFechaHasta" onchange="renderTabla()" title="Hasta">
+      <input type="number" id="filtroMontoMin" placeholder="Monto mín" oninput="renderTabla()" style="width:100px;">
+      <input type="number" id="filtroMontoMax" placeholder="Monto máx" oninput="renderTabla()" style="width:100px;">
+      <select id="filtroEtiqueta" onchange="renderTabla()">
+        <option value="">Todas las etiquetas</option>
+        <option value="rojo">Rojo</option>
+        <option value="amarillo">Amarillo</option>
+        <option value="verde">Verde</option>
+        <option value="azul">Azul</option>
+      </select>
     </div>
+    <div id="tabSummary" style="padding:12px;background:rgba(255,255,255,0.03);border-radius:12px;margin-bottom:16px;font-size:0.9em;color:var(--text-muted);"></div>
     <div class="table-container">
       <table>
         <thead>
@@ -498,6 +519,7 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
     <div class="btn-group">
       <button class="btn btn-success" onclick="exportarPDF()">Exportar PDF</button>
+      <button class="btn btn-success" onclick="exportarReporteMensual()">Reporte Mensual</button>
       <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Importar CSV/JSON</button>
       <input type="file" id="importFile" accept=".csv,.json" style="display:none" onchange="importarArchivo(event)">
       <button class="btn btn-danger" onclick="eliminarTodo()">Eliminar Todo</button>
@@ -509,6 +531,30 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="chart-container">
       <canvas id="ingresosChart"></canvas>
     </div>
+  </div>
+
+  <div class="card glass">
+    <div class="card-title">&#128200; Gráfico de Morosidad</div>
+    <div class="chart-container" style="height:200px;">
+      <canvas id="morosidadChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card glass">
+    <div class="card-title">&#128197; Vista de Calendario</div>
+    <div id="calendarioContainer" style="overflow-x:auto;"></div>
+  </div>
+
+  <div class="card glass">
+    <div class="card-title">&#128198; Gastos de Mantenimiento</div>
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-group"><label>Unidad</label><select id="gastoUnidad"><option value="">Seleccionar...</option></select></div>
+      <div class="form-group"><label>Monto</label><input type="number" id="gastoMonto" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>Descripción</label><input type="text" id="gastoDescripcion" placeholder="Ej: Reparación"></div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="gastoFecha"></div>
+    </div>
+    <button class="btn btn-primary" onclick="agregarGasto()">Agregar Gasto</button>
+    <div id="gastosList" style="margin-top:16px;"></div>
   </div>
 </div>
 
@@ -532,6 +578,7 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="form-group"><label>Fecha de Pago</label><input type="date" id="editFechaPago"></div>
         <div class="form-group"><label>Estado *</label><select id="editEstado"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option></select></div>
         <div class="form-group"><label>Método de Pago</label><select id="editMetodoPago" onchange="toggleEditComprobante()"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select></div>
+        <div class="form-group"><label>Etiqueta</label><select id="editEtiqueta"><option value="">Ninguna</option><option value="rojo">Rojo</option><option value="amarillo">Amarillo</option><option value="verde">Verde</option><option value="azul">Azul</option></select></div>
 
         <div class="form-group"><label>Comprobante de Pago</label><input type="file" id="editComprobante" accept="image/*" onchange="previewEditComprobante(this)"></div>
         <div class="form-group" id="editPreviewContainer" style="display:none;"><label>Vista Previa</label><img id="editPreviewImg" style="max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"></div>
@@ -751,20 +798,32 @@ async function renderTabla() {
     const buscar = document.getElementById('buscar').value.toLowerCase();
     const filtroEstado = document.getElementById('filtroEstado').value;
     const filtroMes = document.getElementById('filtroMes').value;
+    const filtroFechaDesde = document.getElementById('filtroFechaDesde').value;
+    const filtroFechaHasta = document.getElementById('filtroFechaHasta').value;
+    const filtroMontoMin = parseFloat(document.getElementById('filtroMontoMin').value) || 0;
+    const filtroMontoMax = parseFloat(document.getElementById('filtroMontoMax').value) || Infinity;
+    const filtroEtiqueta = document.getElementById('filtroEtiqueta').value;
 
     let filtrados = datos.filter(d => {
       const matchBuscar = !buscar || (d.arrendatario || '').toLowerCase().includes(buscar) || (d.codigo || '').toLowerCase().includes(buscar);
       const matchEstado = !filtroEstado || d.estado === filtroEstado;
       const matchMes = !filtroMes || d.mesPago === filtroMes;
+      const matchFecha = (!filtroFechaDesde || (d.fechaPago || d.mesPago) >= filtroFechaDesde) && (!filtroFechaHasta || (d.fechaPago || d.mesPago) <= filtroFechaHasta);
+      const matchMonto = d.monto >= filtroMontoMin && d.monto <= filtroMontoMax;
+      const matchEtiqueta = !filtroEtiqueta || d.etiqueta === filtroEtiqueta;
       let matchTab = true;
       if (currentTab === 'departamentos') matchTab = d.tipo === 'departamento';
       else if (currentTab === 'locales') matchTab = d.tipo === 'local';
       else if (currentTab === 'atrasados') matchTab = d.estado === 'pendiente';
       else if (currentTab === 'aldia') matchTab = (d.mesesPagados || []).length >= (d.mesesTotales || 12);
-      return matchBuscar && matchEstado && matchMes && matchTab;
+      return matchBuscar && matchEstado && matchMes && matchFecha && matchMonto && matchEtiqueta && matchTab;
     });
 
     filtrados.sort((a, b) => (a.mesPago || '').localeCompare(b.mesPago || ''));
+
+    const totalMonto = filtrados.reduce((s, d) => s + d.monto, 0);
+    const tabNames = { todos: 'Todos', departamentos: 'Departamentos', locales: 'Locales', atrasados: 'Atrasados', aldia: 'Al Día' };
+    document.getElementById('tabSummary').innerHTML = `<strong>${tabNames[currentTab]}:</strong> ${filtrados.length} unidades | Total: <span style="color:var(--success)">${formatCurrency(totalMonto)}</span>`;
 
     const tbody = document.getElementById('tablaBody');
     const empty = document.getElementById('emptyState');
@@ -794,6 +853,7 @@ async function renderTabla() {
           <td style="color:${saldo > 0 ? 'var(--danger)' : 'var(--success)'};font-weight:600;">${saldo > 0 ? formatCurrency(saldo) : 'Al día'}</td>
           <td><span class="badge badge-${estadoAlerta}">${estadoAlerta === 'aldia' ? 'Al Día' : estadoAlerta === 'atrasado' ? 'Atrasado' : 'Atención'}</span></td>
           <td>${d.metodoPago || '-'}</td>
+          <td>${d.etiqueta ? `<span class="badge" style="background:${d.etiqueta === 'rojo' ? 'rgba(239,68,68,0.15)' : d.etiqueta === 'amarillo' ? 'rgba(251,191,36,0.15)' : d.etiqueta === 'verde' ? 'rgba(52,211,153,0.15)' : 'rgba(99,102,241,0.15)'};color:${d.etiqueta === 'rojo' ? 'var(--danger)' : d.etiqueta === 'amarillo' ? 'var(--warning)' : d.etiqueta === 'verde' ? 'var(--success)' : 'var(--primary)'};border:1px solid ${d.etiqueta === 'rojo' ? 'rgba(239,68,68,0.3)' : d.etiqueta === 'amarillo' ? 'rgba(251,191,36,0.3)' : d.etiqueta === 'verde' ? 'rgba(52,211,153,0.3)' : 'rgba(99,102,241,0.3)'};">${d.etiqueta.charAt(0).toUpperCase() + d.etiqueta.slice(1)}</span>` : '-'}</td>
           <td>${d.comprobante ? `<img src="${d.comprobante}" onclick="verComprobante('${d.id}')" style="width:36px;height:36px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);">` : '-'}</td>
           <td>
             <div class="row-actions">
@@ -811,7 +871,10 @@ async function renderTabla() {
     actualizarDashboard(datos);
     actualizarAlertas(datos);
     actualizarFiltroMes(datos);
+    actualizarGastos(datos);
     actualizarGrafico(datos);
+    verificarNotificaciones(datos);
+    verificarRespaldoAutomatico(datos);
   } catch (error) {
     console.error('Error en renderTabla:', error);
     showToast('Error al cargar datos: ' + error.message, 'error');
@@ -845,14 +908,21 @@ function actualizarDashboard(datos) {
 
   const morosidad = total > 0 ? (atrasados / total * 100) : 0;
   document.getElementById('statMorosidad').textContent = morosidad.toFixed(1) + '%';
+
+  const mesActual = new Date().toISOString().slice(0, 7);
+  const pagadoMes = datos.filter(d => (d.mesesPagados || []).includes(mesActual)).reduce((s, d) => s + d.monto, 0);
+  const esperadoMes = datos.reduce((s, d) => s + d.monto, 0);
+  document.getElementById('statResumenMes').textContent = `${formatCurrency(pagadoMes)} / ${formatCurrency(esperadoMes)}`;
+  document.getElementById('progressMes').style.width = (esperadoMes > 0 ? (pagadoMes / esperadoMes * 100) : 0) + '%';
 }
 
 function actualizarAlertas(datos) {
   const panel = document.getElementById('alertPanel');
   const list = document.getElementById('alertList');
   const atrasados = datos.filter(d => d.estado === 'pendiente');
+  const pagosParciales = datos.filter(d => d.estado === 'pagado' && d.monto < (d.monto * 0.9));
 
-  if (atrasados.length === 0) {
+  if (atrasados.length === 0 && pagosParciales.length === 0) {
     panel.style.display = 'none';
     return;
   }
@@ -861,6 +931,9 @@ function actualizarAlertas(datos) {
   let html = '';
   atrasados.forEach(d => {
     html += `<div class="alert-item"><span>${esc(d.arrendatario)} (${esc(d.codigo)})</span><span style="color:var(--danger);font-weight:600;">Pago atrasado</span></div>`;
+  });
+  pagosParciales.forEach(d => {
+    html += `<div class="alert-item"><span>${esc(d.arrendatario)} (${esc(d.codigo)})</span><span style="color:var(--warning);font-weight:600;">Pago parcial</span></div>`;
   });
   list.innerHTML = html;
 }
@@ -905,6 +978,134 @@ function actualizarGrafico(datos) {
       }
     }
   });
+
+  const alDia = datos.filter(d => (d.mesesPagados || []).length >= (d.mesesTotales || 12)).length;
+  const atrasados = datos.filter(d => d.estado === 'pendiente').length;
+  const ctx2 = document.getElementById('morosidadChart').getContext('2d');
+  if (window.morosidadChartInstance) window.morosidadChartInstance.destroy();
+  window.morosidadChartInstance = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: ['Al Día', 'Atrasados'],
+      datasets: [{
+        data: [alDia, atrasados],
+        backgroundColor: ['rgba(52,211,153,0.6)', 'rgba(248,113,113,0.6)'],
+        borderColor: ['rgba(52,211,153,0.8)', 'rgba(248,113,113,0.8)'],
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#7c8aa0' } } }
+    }
+  });
+
+  renderCalendario(datos);
+}
+
+function renderCalendario(datos) {
+  const container = document.getElementById('calendarioContainer');
+  const meses = [...new Set(datos.flatMap(d => d.mesesPagados || [d.mesPago]).filter(Boolean))].sort();
+  if (meses.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">No hay datos para mostrar</p>';
+    return;
+  }
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:0.85em;"><thead><tr><th style="padding:8px;border:1px solid rgba(255,255,255,0.1);">Unidad</th>';
+  meses.forEach(m => {
+    html += `<th style="padding:8px;border:1px solid rgba(255,255,255,0.1);">${formatMes(m)}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  datos.forEach(d => {
+    html += `<tr><td style="padding:8px;border:1px solid rgba(255,255,255,0.1);"><strong>${esc(d.codigo)}</strong> - ${esc(d.arrendatario)}</td>`;
+    meses.forEach(m => {
+      const pagado = (d.mesesPagados || []).includes(m);
+      html += `<td style="padding:8px;border:1px solid rgba(255,255,255,0.1);text-align:center;background:${pagado ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.1)'};color:${pagado ? 'var(--success)' : 'var(--danger)'};">${pagado ? '✓' : '✗'}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function agregarGasto() {
+  const unidad = document.getElementById('gastoUnidad').value;
+  const monto = parseFloat(document.getElementById('gastoMonto').value) || 0;
+  const descripcion = document.getElementById('gastoDescripcion').value.trim();
+  const fecha = document.getElementById('gastoFecha').value;
+  if (!unidad || monto <= 0) { showToast('Complete los campos requeridos', 'error'); return; }
+  const gastos = JSON.parse(localStorage.getItem('gastos') || '[]');
+  gastos.push({ unidad, monto, descripcion, fecha, creado: new Date().toISOString() });
+  localStorage.setItem('gastos', JSON.stringify(gastos));
+  document.getElementById('gastoMonto').value = '';
+  document.getElementById('gastoDescripcion').value = '';
+  renderGastos();
+  showToast('Gasto agregado');
+}
+
+function renderGastos() {
+  const gastos = JSON.parse(localStorage.getItem('gastos') || '[]');
+  const container = document.getElementById('gastosList');
+  if (gastos.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85em;">No hay gastos registrados</p>';
+    return;
+  }
+  const total = gastos.reduce((s, g) => s + g.monto, 0);
+  let html = `<div style="margin-bottom:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;"><strong>Total Gastos:</strong> <span style="color:var(--danger);font-weight:600;">${formatCurrency(total)}</span></div>`;
+  html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+  gastos.slice().reverse().forEach((g, i) => {
+    html += `<div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+      <div><strong>${esc(g.unidad)}</strong> - ${esc(g.descripcion)}<br><small style="color:var(--text-muted);">${g.fecha || '-'}</small></div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="color:var(--danger);font-weight:600;">${formatCurrency(g.monto)}</span>
+        <button class="btn btn-danger" style="padding:4px 8px;font-size:0.7em;" onclick="eliminarGasto(${gastos.length - 1 - i})">Eliminar</button>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function eliminarGasto(index) {
+  const gastos = JSON.parse(localStorage.getItem('gastos') || '[]');
+  gastos.splice(index, 1);
+  localStorage.setItem('gastos', JSON.stringify(gastos));
+  renderGastos();
+  showToast('Gasto eliminado');
+}
+
+function toggleDashboard() {
+  const container = document.getElementById('dashboardContainer');
+  const cards = Array.from(container.children);
+  const currentOrder = cards.map(c => c.querySelector('.stat-label').textContent);
+  const newOrder = [...currentOrder].sort(() => Math.random() - 0.5);
+  newOrder.forEach(label => {
+    const card = cards.find(c => c.querySelector('.stat-label').textContent === label);
+    if (card) container.appendChild(card);
+  });
+  showToast('Dashboard reorganizado');
+}
+
+function toggleTema() {
+  const body = document.body;
+  const isDark = body.style.background !== '#f8fafc';
+  if (isDark) {
+    body.style.background = '#f8fafc';
+    body.style.color = '#1e293b';
+    document.documentElement.style.setProperty('--text', '#1e293b');
+    document.documentElement.style.setProperty('--text-bright', '#0f172a');
+    document.documentElement.style.setProperty('--text-muted', '#64748b');
+    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.7)');
+    document.documentElement.style.setProperty('--glass-border', 'rgba(0,0,0,0.1)');
+  } else {
+    body.style.background = '#08080f';
+    body.style.color = '#e2e8f0';
+    document.documentElement.style.setProperty('--text', '#e2e8f0');
+    document.documentElement.style.setProperty('--text-bright', '#f8fafc');
+    document.documentElement.style.setProperty('--text-muted', '#7c8aa0');
+    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.04)');
+    document.documentElement.style.setProperty('--glass-border', 'rgba(255,255,255,0.09)');
+  }
 }
 
 function limpiarFormulario() {
@@ -946,8 +1147,10 @@ document.getElementById('pagoForm').addEventListener('submit', async (e) => {
       existente.metodoPago = document.getElementById('metodoPago').value;
       existente.telefono = document.getElementById('telefono').value.trim();
       existente.tamano = document.getElementById('tamano').value;
+      existente.etiqueta = document.getElementById('etiqueta').value;
       if (comprobante) existente.comprobante = comprobante;
       await put(existente);
+      registrarActividad('actualizar', `${arrendatario} - ${formatMes(mesPago)}`);
       showToast(`Mes ${formatMes(mesPago)} registrado para ${arrendatario}`);
     } else {
       const registro = {
@@ -963,10 +1166,12 @@ document.getElementById('pagoForm').addEventListener('submit', async (e) => {
         fechaPago: document.getElementById('fechaPago').value || null,
         estado: document.getElementById('estado').value,
         metodoPago: document.getElementById('metodoPago').value,
+        etiqueta: document.getElementById('etiqueta').value,
         comprobante: comprobante,
         creado: new Date().toISOString()
       };
       await add(registro);
+      registrarActividad('crear', `${arrendatario} - ${codigo}`);
       showToast('Registro agregado correctamente');
     }
     limpiarFormulario();
@@ -981,6 +1186,7 @@ async function eliminarRegistro(id) {
   if (!confirm('¿Eliminar este registro?')) return;
   try {
     await del(id);
+    registrarActividad('eliminar', `ID: ${id}`);
     renderTabla();
     showToast('Registro eliminado');
   } catch (error) {
@@ -1004,6 +1210,7 @@ function abrirEditar(id) {
     document.getElementById('editFechaPago').value = d.fechaPago || '';
     document.getElementById('editEstado').value = d.estado;
     document.getElementById('editMetodoPago').value = d.metodoPago || 'transferencia';
+    document.getElementById('editEtiqueta').value = d.etiqueta || '';
 
     const previewContainer = document.getElementById('editPreviewContainer');
     const previewImg = document.getElementById('editPreviewImg');
@@ -1060,6 +1267,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
       fechaPago: document.getElementById('editFechaPago').value || null,
       estado: estado,
       metodoPago: document.getElementById('editMetodoPago').value,
+      etiqueta: document.getElementById('editEtiqueta').value,
     });
     await put(original);
     cerrarModal();
@@ -1302,9 +1510,89 @@ document.getElementById('editModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) cerrarModal();
 });
 
-initDB().then(() => {
+function registrarActividad(accion, detalles) {
+  const actividad = JSON.parse(localStorage.getItem('actividad') || '[]');
+  actividad.unshift({ fecha: new Date().toISOString(), accion, detalles });
+  if (actividad.length > 100) actividad.pop();
+  localStorage.setItem('actividad', JSON.stringify(actividad));
+}
+
+function verificarNotificaciones(datos) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    const atrasados = datos.filter(d => d.estado === 'pendiente');
+    if (atrasados.length > 0) {
+      new Notification('Pagos Atrasados', { body: `${atrasados.length} unidades tienen pagos pendientes` });
+    }
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission();
+  }
+}
+
+function verificarRespaldoAutomatico(datos) {
+  const ultimoRespaldo = localStorage.getItem('ultimoRespaldo');
+  const ahora = new Date();
+  const semanaEnMs = 7 * 24 * 60 * 60 * 1000;
+  if (!ultimoRespaldo || (ahora - new Date(ultimoRespaldo)) > semanaEnMs) {
+    localStorage.setItem('ultimoRespaldo', ahora.toISOString());
+    exportarPDF();
+    showToast('Respaldo automático generado');
+  }
+}
+
+function exportarReporteMensual() {
+  getAll().then(datos => {
+    if (datos.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(18);
+    doc.text('Reporte Mensual - Inventario de Arriendos', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generado: ${new Date().toLocaleDateString('es-CL')}`, 14, 28);
+    const mesActual = new Date().toISOString().slice(0, 7);
+    const pagadoMes = datos.filter(d => (d.mesesPagados || []).includes(mesActual)).reduce((s, d) => s + d.monto, 0);
+    const totalEsperado = datos.reduce((s, d) => s + d.monto, 0);
+    doc.text(`Mes: ${formatMes(mesActual)}`, 14, 36);
+    doc.text(`Total Recaudado: ${formatCurrency(pagadoMes)}`, 14, 44);
+    doc.text(`Total Esperado: ${formatCurrency(totalEsperado)}`, 14, 52);
+    const headers = [['Código','Tipo','Arrendatario','Mes','Monto','Estado']];
+    const rows = datos.map(d => [
+      d.codigo,
+      d.tipo === 'departamento' ? 'Dep' : 'Local',
+      d.arrendatario,
+      formatMes(d.mesPago),
+      formatCurrency(d.monto),
+      d.estado === 'pagado' ? 'Pagado' : 'Pendiente'
+    ]);
+    doc.autoTable({
+      head: headers,
+      body: rows,
+      startY: 60,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [99, 102, 241] }
+    });
+    doc.save(`reporte_mensual_${mesActual}.pdf`);
+    showToast('Reporte mensual exportado');
+  }).catch(error => {
+    showToast('Error al exportar: ' + error.message, 'error');
+  });
+}
+
+function actualizarSelectGastos(datos) {
+  const select = document.getElementById('gastoUnidad');
+  const current = select.value;
+  const unidades = [...new Set(datos.map(d => d.codigo))].sort();
+  select.innerHTML = '<option value="">Seleccionar...</option>' + unidades.map(u => `<option value="${u}">${u}</option>`).join('');
+  select.value = current;
+}
+
+initDB().then(async () => {
   renderTabla();
   toggleComprobante();
+  renderGastos();
+  const datos = await getAll();
+  actualizarSelectGastos(datos);
+  verificarNotificaciones(datos);
 }).catch(error => {
   console.error('Error inicializando DB:', error);
   showToast('Error al iniciar: ' + error.message, 'error');

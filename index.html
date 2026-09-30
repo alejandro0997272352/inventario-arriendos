@@ -472,7 +472,8 @@ tbody tr:last-child td { border-bottom: none; }
 @media (max-width: 768px) {
   .top-nav { padding: 8px 12px; }
   .nav-title { font-size: 0.9em; }
-  .nav-links { display: none; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: 4px; }
+  .nav-link { font-size: 0.75em; padding: 4px 8px; }
   .nav-actions { margin-left: auto; }
   .container { padding: 14px; padding-top: 70px; }
   .header h1 { font-size: 1.7em; }
@@ -585,12 +586,7 @@ tbody tr:last-child td { border-bottom: none; }
   </div>
   </div>
 
-  <div id="panel-registros" class="panel">
-  <div class="alert-panel" id="alertPanel" style="display:none;">
-    <h3>&#9888; Alertas</h3>
-    <div id="alertList"></div>
-  </div>
-
+  <div id="panel-nuevo" class="panel">
   <div class="card glass">
     <div class="card-title">&#128203; Nuevo Registro</div>
     <form id="pagoForm">
@@ -616,6 +612,12 @@ tbody tr:last-child td { border-bottom: none; }
         <button type="button" class="btn btn-ghost" onclick="limpiarFormulario()">Limpiar</button>
       </div>
     </form>
+  </div>
+
+  <div id="panel-registros" class="panel">
+  <div class="alert-panel" id="alertPanel" style="display:none;">
+    <h3>&#9888; Alertas</h3>
+    <div id="alertList"></div>
   </div>
 
   <div class="card glass" id="registrosCard">

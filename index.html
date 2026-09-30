@@ -1286,7 +1286,9 @@ function renderComparativoConsumo() {
 
 function renderServiciosChart() {
   const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
-  const ctx = document.getElementById('serviciosChart').getContext('2d');
+  const canvas = document.getElementById('serviciosChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
   const meses = [...new Set(servicios.map(s => s.fecha ? s.fecha.slice(0, 7) : '').filter(Boolean))].sort();
   const costos1 = meses.map(m => servicios.filter(s => s.medidor === 1 && s.fecha && s.fecha.startsWith(m)).reduce((sum, s) => sum + s.costo, 0));
   const costos2 = meses.map(m => servicios.filter(s => s.medidor === 2 && s.fecha && s.fecha.startsWith(m)).reduce((sum, s) => sum + s.costo, 0));
@@ -1317,6 +1319,7 @@ function renderServicios() {
   [1, 2].forEach(medidor => {
     const container = document.getElementById('serviciosList' + medidor);
     const promedioContainer = document.getElementById('serviciosPromedio' + medidor);
+    if (!container || !promedioContainer) return;
     const serviciosFiltrados = servicios.filter(s => s.medidor === medidor);
     if (serviciosFiltrados.length === 0) {
       container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85em;">No hay servicios registrados</p>';

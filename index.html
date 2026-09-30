@@ -53,7 +53,20 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
-.container { max-width: 1400px; margin: 0 auto; padding: 28px; position: relative; z-index: 1; }
+.top-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); }
+.nav-brand { display: flex; align-items: center; gap: 10px; }
+.nav-icon { font-size: 1.5em; }
+.nav-title { font-weight: 700; color: var(--text-bright); font-size: 1.1em; }
+.nav-links { display: flex; gap: 8px; }
+.nav-link { padding: 8px 16px; border-radius: 10px; color: var(--text-muted); text-decoration: none; font-size: 0.85em; font-weight: 600; transition: all 0.3s; cursor: pointer; }
+.nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.08); color: var(--text-bright); }
+.nav-actions { display: flex; gap: 8px; }
+.nav-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); cursor: pointer; font-size: 1.1em; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+.nav-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+
+.scroll-section { scroll-margin-top: 80px; }
+
+.container { max-width: 1400px; margin: 0 auto; padding: 28px; padding-top: 80px; position: relative; z-index: 1; }
 
 .header { text-align: center; padding: 40px 0 32px; }
 .header h1 {
@@ -405,15 +418,30 @@ tbody tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body>
-<div class="db-status local" id="dbStatus">Almacenamiento Local</div>
-<button onclick="toggleTema()" style="position:fixed;top:20px;left:20px;z-index:100;padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer;font-size:0.8em;font-weight:600;backdrop-filter:blur(20px);">&#127769; Tema</button>
-<button onclick="toggleDashboard()" style="position:fixed;top:20px;left:120px;z-index:100;padding:10px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:var(--text);cursor:pointer;font-size:0.8em;font-weight:600;backdrop-filter:blur(20px);">&#128202; Dashboard</button>
+<nav class="top-nav glass">
+  <div class="nav-brand">
+    <span class="nav-icon">&#127968;</span>
+    <span class="nav-title">Inventario de Arriendos</span>
+  </div>
+  <div class="nav-links">
+    <a href="#dashboard" class="nav-link active" onclick="scrollToSection('dashboard')">&#128200; Dashboard</a>
+    <a href="#registros" class="nav-link" onclick="scrollToSection('registros')">&#128202; Registros</a>
+    <a href="#servicios" class="nav-link" onclick="scrollToSection('servicios')">&#9881; Servicios</a>
+    <a href="#reportes" class="nav-link" onclick="scrollToSection('reportes')">&#128196; Reportes</a>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-btn" onclick="toggleTema()" title="Cambiar tema (Ctrl+T)">&#127769;</button>
+    <button class="nav-btn" onclick="busquedaAvanzada()" title="Búsqueda avanzada (Ctrl+F)">&#128269;</button>
+    <button class="nav-btn" onclick="exportarPDF()" title="Exportar PDF (Ctrl+E)">&#128196;</button>
+  </div>
+</nav>
 <div class="container">
   <div class="header">
     <h1>Inventario de Pagos de Arriendos</h1>
     <p>12 Departamentos para estudiantes + 2 Locales comerciales</p>
   </div>
 
+  <div id="dashboard" class="scroll-section">
   <div class="dashboard" id="dashboardContainer">
     <div class="dashboard-panel glass">
       <div class="panel-title">&#127968; Resumen General</div>
@@ -469,7 +497,9 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </div>
   </div>
+  </div>
 
+  <div id="registros" class="scroll-section">
   <div class="alert-panel" id="alertPanel" style="display:none;">
     <h3>&#9888; Alertas</h3>
     <div id="alertList"></div>
@@ -502,7 +532,7 @@ tbody tr:last-child td { border-bottom: none; }
     </form>
   </div>
 
-  <div class="card glass">
+  <div class="card glass" id="registrosCard">
     <div class="card-title">&#128202; Registros</div>
     <div class="tabs">
       <div class="tab active" onclick="setTab('todos', event)">Todos</div>
@@ -569,6 +599,7 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
+  <div id="reportes" class="scroll-section">
   <div class="card glass">
     <div class="card-title">&#128200; Gráfico de Ingresos</div>
     <div class="chart-container">
@@ -588,6 +619,7 @@ tbody tr:last-child td { border-bottom: none; }
     <div id="calendarioContainer" style="overflow-x:auto;"></div>
   </div>
 
+  <div id="servicios" class="scroll-section">
   <div class="card glass">
     <div class="card-title">&#128200; Gráfico de Consumo - Servicios</div>
     <div class="chart-container" style="height:200px;">
@@ -599,7 +631,7 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <div class="card glass">
+  <div class="card glass" id="serviciosCard">
     <div class="card-title">&#9881; Pagos de Servicios Básicos</div>
     <div class="servicios-grid">
       <div class="servicio-panel glass">
@@ -1986,6 +2018,22 @@ function exportarReporteMensual() {
 function actualizarSelectGastos(datos) {
   // Función mantenida por compatibilidad, ya no se usa
 }
+
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'n') { e.preventDefault(); document.getElementById('pagoForm').scrollIntoView({ behavior: 'smooth' }); }
+  if (e.ctrlKey && e.key === 'f') { e.preventDefault(); busquedaAvanzada(); }
+  if (e.ctrlKey && e.key === 'e') { e.preventDefault(); exportarPDF(); }
+  if (e.ctrlKey && e.key === 't') { e.preventDefault(); toggleTema(); }
+});
 
 initDB().then(async () => {
   aplicarTemaGuardado();

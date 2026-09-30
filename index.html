@@ -465,9 +465,9 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="card-title">&#128203; Nuevo Registro</div>
     <form id="pagoForm">
       <div class="form-grid">
-        <div class="form-group"><label>Código Unidad *</label><select id="codigo" required><option value="">Seleccionar...</option><option value="DEP-01">DEP-01</option><option value="DEP-02">DEP-02</option><option value="DEP-03">DEP-03</option><option value="DEP-04">DEP-04</option><option value="DEP-05">DEP-05</option><option value="DEP-06">DEP-06</option><option value="DEP-07">DEP-07</option><option value="DEP-08">DEP-08</option><option value="DEP-09">DEP-09</option><option value="DEP-10">DEP-10</option><option value="DEP-11">DEP-11</option><option value="DEP-12">DEP-12</option><option value="LOC-01">LOC-01</option><option value="LOC-02">LOC-02</option></select></div>
-        <div class="form-group"><label>Tipo *</label><select id="tipo"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
-        <div class="form-group"><label>Tamaño</label><select id="tamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
+        <div class="form-group"><label>Código Unidad *</label><select id="codigo" required onchange="actualizarTipoTamano()"><option value="">Seleccionar...</option><option value="DEP-01">DEP-01</option><option value="DEP-02">DEP-02</option><option value="DEP-03">DEP-03</option><option value="DEP-04">DEP-04</option><option value="DEP-05">DEP-05</option><option value="DEP-06">DEP-06</option><option value="DEP-07">DEP-07</option><option value="DEP-08">DEP-08</option><option value="DEP-09">DEP-09</option><option value="DEP-10">DEP-10</option><option value="DEP-11">DEP-11</option><option value="DEP-12">DEP-12</option><option value="LOC-01">LOC-01</option><option value="LOC-02">LOC-02</option></select></div>
+        <div class="form-group"><label>Tipo *</label><select id="tipo" onchange="actualizarTipoTamano()"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
+        <div class="form-group" id="tamanoContainer"><label>Tamaño</label><select id="tamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
         <div class="form-group"><label>Arrendatario *</label><input type="text" id="arrendatario" required placeholder="Nombre completo"></div>
         <div class="form-group"><label>Teléfono</label><input type="tel" id="telefono" placeholder="+56 9 1234 5678"></div>
         <div class="form-group"><label>Mes de Pago *</label><input type="month" id="mesPago" required></div>
@@ -594,9 +594,9 @@ tbody tr:last-child td { border-bottom: none; }
     <form id="editForm">
       <input type="hidden" id="editId">
       <div class="form-grid">
-        <div class="form-group"><label>Código Unidad *</label><select id="editCodigo" required><option value="">Seleccionar...</option><option value="DEP-01">DEP-01</option><option value="DEP-02">DEP-02</option><option value="DEP-03">DEP-03</option><option value="DEP-04">DEP-04</option><option value="DEP-05">DEP-05</option><option value="DEP-06">DEP-06</option><option value="DEP-07">DEP-07</option><option value="DEP-08">DEP-08</option><option value="DEP-09">DEP-09</option><option value="DEP-10">DEP-10</option><option value="DEP-11">DEP-11</option><option value="DEP-12">DEP-12</option><option value="LOC-01">LOC-01</option><option value="LOC-02">LOC-02</option></select></div>
-        <div class="form-group"><label>Tipo *</label><select id="editTipo"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
-        <div class="form-group"><label>Tamaño</label><select id="editTamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
+        <div class="form-group"><label>Código Unidad *</label><select id="editCodigo" required onchange="actualizarEditTipoTamano()"><option value="">Seleccionar...</option><option value="DEP-01">DEP-01</option><option value="DEP-02">DEP-02</option><option value="DEP-03">DEP-03</option><option value="DEP-04">DEP-04</option><option value="DEP-05">DEP-05</option><option value="DEP-06">DEP-06</option><option value="DEP-07">DEP-07</option><option value="DEP-08">DEP-08</option><option value="DEP-09">DEP-09</option><option value="DEP-10">DEP-10</option><option value="DEP-11">DEP-11</option><option value="DEP-12">DEP-12</option><option value="LOC-01">LOC-01</option><option value="LOC-02">LOC-02</option></select></div>
+        <div class="form-group"><label>Tipo *</label><select id="editTipo" onchange="actualizarEditTipoTamano()"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
+        <div class="form-group" id="editTamanoContainer"><label>Tamaño</label><select id="editTamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
         <div class="form-group"><label>Arrendatario *</label><input type="text" id="editArrendatario" required></div>
         <div class="form-group"><label>Teléfono</label><input type="tel" id="editTelefono"></div>
         <div class="form-group"><label>Mes de Pago *</label><input type="month" id="editMesPago" required></div>
@@ -727,6 +727,20 @@ function aplicarCapitalizacion(id) {
 aplicarCapitalizacion('arrendatario');
 aplicarCapitalizacion('editArrendatario');
 
+function actualizarTipoTamano() {
+  const codigo = document.getElementById('codigo').value;
+  const tipoSelect = document.getElementById('tipo');
+  const tamanoContainer = document.getElementById('tamanoContainer');
+  if (codigo.startsWith('DEP-')) {
+    tipoSelect.value = 'departamento';
+    tamanoContainer.style.display = 'flex';
+  } else if (codigo.startsWith('LOC-')) {
+    tipoSelect.value = 'local';
+    tamanoContainer.style.display = 'none';
+    document.getElementById('tamano').value = 'estandar';
+  }
+}
+
 function toggleComprobante() {
   const metodo = document.getElementById('metodoPago').value;
   const comprobanteField = document.getElementById('comprobante').closest('.form-group');
@@ -739,6 +753,20 @@ function toggleComprobante() {
     previewField.style.display = 'none';
     document.getElementById('comprobante').value = '';
     document.getElementById('previewImg').src = '';
+  }
+}
+
+function actualizarEditTipoTamano() {
+  const codigo = document.getElementById('editCodigo').value;
+  const tipoSelect = document.getElementById('editTipo');
+  const tamanoContainer = document.getElementById('editTamanoContainer');
+  if (codigo.startsWith('DEP-')) {
+    tipoSelect.value = 'departamento';
+    tamanoContainer.style.display = 'flex';
+  } else if (codigo.startsWith('LOC-')) {
+    tipoSelect.value = 'local';
+    tamanoContainer.style.display = 'none';
+    document.getElementById('editTamano').value = 'estandar';
   }
 }
 
@@ -1272,6 +1300,7 @@ function abrirEditar(id) {
       previewImg.src = '';
     }
     document.getElementById('editComprobante').value = '';
+    actualizarEditTipoTamano();
     document.getElementById('editModal').classList.add('active');
   }).catch(error => {
     showToast('Error al abrir edición: ' + error.message, 'error');
@@ -1658,6 +1687,7 @@ function actualizarSelectGastos(datos) {
 initDB().then(async () => {
   renderTabla();
   toggleComprobante();
+  actualizarTipoTamano();
   renderGastos();
   const datos = await getAll();
   actualizarSelectGastos(datos);

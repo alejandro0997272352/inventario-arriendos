@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario de Pagos de Arriendos</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #818cf8;
+  --primary-glow: rgba(129,140,248,0.4);
+  --success: #34d399;
+  --success-glow: rgba(52,211,153,0.35);
+  --danger: #f87171;
+  --danger-glow: rgba(248,113,113,0.35);
+  --warning: #fbbf24;
+  --warning-glow: rgba(251,191,36,0.35);
+  --glass: rgba(255,255,255,0.04);
+  --glass-strong: rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.09);
+  --text: #e2e8f0;
+  --text-bright: #f8fafc;
+  --text-muted: #7c8aa0;
+  --radius: 24px;
+  --radius-sm: 14px;
+}
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #08080f;
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(99,102,241,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(168,85,247,0.1) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 90%, rgba(16,185,129,0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+.container { max-width: 1400px; margin: 0 auto; padding: 28px; position: relative; z-index: 1; }
+
+.header { text-align: center; padding: 40px 0 32px; }
+.header h1 {
+  font-size: 2.4em;
+  font-weight: 800;
+  background: linear-gradient(135deg, #c7d2fe 0%, #e9d5ff 30%, #c7d2fe 60%, #a5b4fc 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 6s ease infinite;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+.header p { color: var(--text-muted); font-size: 0.95em; font-weight: 400; }
+
+@keyframes shimmer { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  padding: 20px;
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent 40%, transparent 60%, rgba(255,255,255,0.06));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.stat-card:hover { background: var(--glass-strong); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.35); }
+.stat-icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4em;
+  margin-bottom: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.stat-card:nth-child(1) .stat-icon { color: var(--primary); }
+.stat-card:nth-child(2) .stat-icon { color: var(--success); }
+.stat-card:nth-child(3) .stat-icon { color: var(--danger); }
+.stat-card:nth-child(4) .stat-icon { color: var(--warning); }
+.stat-card:nth-child(5) .stat-icon { color: #a78bfa; }
+.stat-card:nth-child(6) .stat-icon { color: #f472b6; }
+.stat-value { font-size: 1.5em; font-weight: 800; color: var(--text-bright); letter-spacing: -0.5px; }
+.stat-label { font-size: 0.7em; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+.progress-bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; margin-top: 12px; }
+.progress-fill { height: 100%; border-radius: 4px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
+
+.card { padding: 26px; margin-bottom: 24px; }
+.card-title { font-size: 1.1em; font-weight: 700; color: var(--text-bright); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 0.68em; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+.form-group input, .form-group select {
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  font-size: 0.9em;
+  color: var(--text);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  color-scheme: dark;
+}
+.form-group input::placeholder { color: rgba(124,138,160,0.5); }
+.form-group input:focus, .form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+}
+.form-group select option { background: #12121f; color: var(--text); }
+
+.btn {
+  padding: 12px 22px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.86em;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.btn:hover::before { opacity: 1; }
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; box-shadow: 0 4px 20px rgba(99,102,241,0.3); }
+.btn-primary:hover { box-shadow: 0 8px 30px rgba(99,102,241,0.45); transform: translateY(-2px); }
+.btn-success { background: linear-gradient(135deg, #059669, #10b981); color: #fff; box-shadow: 0 4px 20px rgba(16,185,129,0.3); }
+.btn-success:hover { box-shadow: 0 8px 30px rgba(16,185,129,0.45); transform: translateY(-2px); }
+.btn-danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+.btn-danger:hover { box-shadow: 0 8px 30px rgba(239,68,68,0.45); transform: translateY(-2px); }
+.btn-warning { background: linear-gradient(135deg, #d97706, #f59e0b); color: #fff; box-shadow: 0 4px 20px rgba(245,158,11,0.3); }
+.btn-ghost { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08); }
+.btn-ghost:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+.btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
+.table-container { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); }
+table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+thead { background: rgba(255,255,255,0.02); }
+th {
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+tbody tr { transition: all 0.25s ease; }
+tbody tr:hover { background: rgba(255,255,255,0.03); }
+tbody tr:last-child td { border-bottom: none; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.74em;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.badge-pagado { background: rgba(52,211,153,0.1); color: var(--success); border: 1px solid rgba(52,211,153,0.18); }
+.badge-pendiente { background: rgba(248,113,113,0.1); color: var(--danger); border: 1px solid rgba(248,113,113,0.18); }
+.badge-departamento { background: rgba(129,140,248,0.1); color: var(--primary); border: 1px solid rgba(129,140,248,0.18); }
+.badge-local { background: rgba(251,191,36,0.1); color: var(--warning); border: 1px solid rgba(251,191,36,0.18); }
+.badge-grande { background: rgba(167,139,250,0.1); color: #a78bfa; border: 1px solid rgba(167,139,250,0.18); }
+.badge-estandar { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.18); }
+.badge-al-dia { background: rgba(52,211,153,0.1); color: var(--success); border: 1px solid rgba(52,211,153,0.18); }
+.badge-atrasado { background: rgba(248,113,113,0.1); color: var(--danger); border: 1px solid rgba(248,113,113,0.18); }
+.badge-atencion { background: rgba(251,191,36,0.1); color: var(--warning); border: 1px solid rgba(251,191,36,0.18); }
+.row-actions { display: flex; gap: 6px; }
+.row-actions .btn { padding: 7px 12px; font-size: 0.74em; }
+
+.search-bar { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.search-bar input, .search-bar select {
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  font-size: 0.88em;
+  color: var(--text);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  color-scheme: dark;
+}
+.search-bar input { flex: 1; min-width: 180px; }
+.search-bar input::placeholder { color: rgba(124,138,160,0.5); }
+.search-bar input:focus, .search-bar select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+}
+.search-bar select option { background: #12121f; color: var(--text); }
+
+.empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+.empty-state-icon { font-size: 3em; margin-bottom: 14px; opacity: 0.35; }
+.empty-state p { font-size: 1em; }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  padding: 20px;
+}
+.modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+.modal {
+  background: rgba(18,18,32,0.9);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 28px;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.modal-header h2 { font-size: 1.2em; font-weight: 700; color: var(--text-bright); }
+.modal-close {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 1.4em;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border-radius: 10px;
+  transition: all 0.25s;
+  line-height: 1;
+}
+.modal-close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  padding: 16px 26px;
+  border-radius: 16px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9em;
+  z-index: 2000;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: rgba(16,185,129,0.88); }
+.toast.error { background: rgba(239,68,68,0.88); }
+
+.alert-panel {
+  background: rgba(239,68,68,0.06);
+  border: 1px solid rgba(239,68,68,0.15);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.alert-panel h3 { color: var(--danger); font-size: 0.9em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.alert-item { padding: 8px 12px; background: rgba(239,68,68,0.04); border-radius: 8px; margin-bottom: 6px; font-size: 0.85em; display: flex; justify-content: space-between; align-items: center; }
+.alert-item:last-child { margin-bottom: 0; }
+
+.chart-container { position: relative; height: 250px; margin-top: 16px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+  padding: 10px 18px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.3s;
+}
+.tab:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+.tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.info-item { background: rgba(255,255,255,0.03); padding: 14px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.06); }
+.info-item .label { font-size: 0.7em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.info-item .value { font-size: 1em; font-weight: 600; color: var(--text-bright); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(28px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+@media (max-width: 768px) {
+  .container { padding: 14px; }
+  .header h1 { font-size: 1.7em; }
+  .dashboard { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 16px; }
+  .stat-value { font-size: 1.2em; }
+  .form-grid { grid-template-columns: 1fr; }
+  .card { padding: 18px; }
+  .search-bar { flex-direction: column; }
+  .search-bar input, .search-bar select { width: 100%; }
+  .row-actions { flex-direction: column; }
+  .row-actions .btn { width: 100%; justify-content: center; }
+  .btn-group .btn { flex: 1; justify-content: center; }
+  .tabs { flex-direction: column; }
+  .tab { text-align: center; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Inventario de Pagos de Arriendos</h1>
+    <p>12 Departamentos para estudiantes + 2 Locales comerciales</p>
+  </div>
+
+  <div class="dashboard">
+    <div class="stat-card glass">
+      <div class="stat-icon">&#127968;</div>
+      <div class="stat-value" id="statUnidades">0</div>
+      <div class="stat-label">Unidades Activas</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-icon">&#9989;</div>
+      <div class="stat-value" id="statPagado">$0</div>
+      <div class="stat-label">Total Recaudado</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressPagado" style="width:0%; background: var(--success);"></div></div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-icon">&#9888;</div>
+      <div class="stat-value" id="statPendiente">$0</div>
+      <div class="stat-label">Total por Cobrar</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressPendiente" style="width:0%; background: var(--danger);"></div></div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-icon">&#9888;</div>
+      <div class="stat-value" id="statAtrasados">0</div>
+      <div class="stat-label">Pagos Atrasados</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-icon">&#128200;</div>
+      <div class="stat-value" id="statMorosidad">0%</div>
+      <div class="stat-label">Tasa de Morosidad</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="stat-icon">&#128197;</div>
+      <div class="stat-value" id="statProximo">-</div>
+      <div class="stat-label">Próximo Pago</div>
+    </div>
+  </div>
+
+  <div class="alert-panel" id="alertPanel" style="display:none;">
+    <h3>&#9888; Alertas</h3>
+    <div id="alertList"></div>
+  </div>
+
+  <div class="card glass">
+    <div class="card-title">&#128203; Nuevo Registro</div>
+    <form id="pagoForm">
+      <div class="form-grid">
+        <div class="form-group"><label>Código Unidad *</label><input type="text" id="codigo" required placeholder="DEP-01, LOC-01"></div>
+        <div class="form-group"><label>Tipo *</label><select id="tipo"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
+        <div class="form-group"><label>Tamaño</label><select id="tamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
+        <div class="form-group"><label>Arrendatario *</label><input type="text" id="arrendatario" required placeholder="Nombre completo"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="telefono" placeholder="+56 9 1234 5678"></div>
+        <div class="form-group"><label>Universidad</label><input type="text" id="universidad" placeholder="Universidad del estudiante"></div>
+        <div class="form-group"><label>Mes de Pago *</label><input type="month" id="mesPago" required></div>
+        <div class="form-group"><label>Meses Totales de Arriendo *</label><input type="number" id="mesesTotales" required min="1" max="60" placeholder="Ej: 12"></div>
+        <div class="form-group"><label>Monto *</label><input type="number" id="monto" required min="0" step="0.01" placeholder="0.00"></div>
+        <div class="form-group"><label>Fecha de Pago</label><input type="date" id="fechaPago"></div>
+        <div class="form-group"><label>Estado *</label><select id="estado"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option></select></div>
+        <div class="form-group"><label>Método de Pago</label><select id="metodoPago"><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="otro">Otro</option></select></div>
+        <div class="form-group"><label>Depósito de Garantía</label><input type="number" id="deposito" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="form-group"><label>Fecha Inicio Contrato</label><input type="date" id="fechaInicio"></div>
+        <div class="form-group"><label>Fecha Fin Contrato</label><input type="date" id="fechaFin"></div>
+        <div class="form-group"><label>Comprobante de Pago</label><input type="file" id="comprobante" accept="image/*" onchange="previewComprobante(this)"></div>
+        <div class="form-group" id="previewContainer" style="display:none;"><label>Vista Previa</label><img id="previewImg" style="max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"></div>
+      </div>
+      <div class="btn-group">
+        <button type="submit" class="btn btn-primary">&#10010; Agregar Registro</button>
+        <button type="button" class="btn btn-ghost" onclick="limpiarFormulario()">Limpiar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card glass">
+    <div class="card-title">&#128202; Registros</div>
+    <div class="tabs">
+      <div class="tab active" onclick="setTab('todos')">Todos</div>
+      <div class="tab" onclick="setTab('departamentos')">Departamentos</div>
+      <div class="tab" onclick="setTab('locales')">Locales</div>
+      <div class="tab" onclick="setTab('atrasados')">Atrasados</div>
+      <div class="tab" onclick="setTab('aldia')">Al Día</div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="buscar" placeholder="Buscar por nombre, código..." oninput="renderTabla()">
+      <select id="filtroEstado" onchange="renderTabla()">
+        <option value="">Todos los estados</option>
+        <option value="pagado">Pagado</option>
+        <option value="pendiente">Pendiente</option>
+      </select>
+      <select id="filtroMes" onchange="renderTabla()">
+        <option value="">Todos los meses</option>
+      </select>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Tipo</th>
+            <th>Arrendatario</th>
+            <th>Progreso</th>
+            <th>Mes</th>
+            <th>Monto</th>
+            <th>Saldo</th>
+            <th>Estado</th>
+            <th>Método</th>
+            <th>Comprobante</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="empty-state-icon">&#128196;</div>
+      <p>No hay registros aún. Agrega el primero con el formulario de arriba.</p>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" onclick="exportarCSV()">Exportar CSV</button>
+      <button class="btn btn-success" onclick="exportarJSON()">Exportar JSON</button>
+      <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Importar CSV/JSON</button>
+      <input type="file" id="importFile" accept=".csv,.json" style="display:none" onchange="importarArchivo(event)">
+      <button class="btn btn-danger" onclick="eliminarTodo()">Eliminar Todo</button>
+    </div>
+  </div>
+
+  <div class="card glass">
+    <div class="card-title">&#128200; Gráfico de Ingresos</div>
+    <div class="chart-container">
+      <canvas id="ingresosChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Editar Registro</h2>
+      <button class="modal-close" onclick="cerrarModal()">&times;</button>
+    </div>
+    <form id="editForm">
+      <input type="hidden" id="editId">
+      <div class="form-grid">
+        <div class="form-group"><label>Código Unidad *</label><input type="text" id="editCodigo" required></div>
+        <div class="form-group"><label>Tipo *</label><select id="editTipo"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
+        <div class="form-group"><label>Tamaño</label><select id="editTamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
+        <div class="form-group"><label>Arrendatario *</label><input type="text" id="editArrendatario" required></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="editTelefono"></div>
+        <div class="form-group"><label>Universidad</label><input type="text" id="editUniversidad"></div>
+        <div class="form-group"><label>Mes de Pago *</label><input type="month" id="editMesPago" required></div>
+        <div class="form-group"><label>Meses Totales *</label><input type="number" id="editMesesTotales" required min="1" max="60"></div>
+        <div class="form-group"><label>Monto *</label><input type="number" id="editMonto" required min="0" step="0.01"></div>
+        <div class="form-group"><label>Fecha de Pago</label><input type="date" id="editFechaPago"></div>
+        <div class="form-group"><label>Estado *</label><select id="editEstado"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option></select></div>
+        <div class="form-group"><label>Método de Pago</label><select id="editMetodoPago"><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo</option><option value="cheque">Cheque</option><option value="otro">Otro</option></select></div>
+        <div class="form-group"><label>Depósito de Garantía</label><input type="number" id="editDeposito" min="0" step="0.01"></div>
+        <div class="form-group"><label>Fecha Inicio Contrato</label><input type="date" id="editFechaInicio"></div>
+        <div class="form-group"><label>Fecha Fin Contrato</label><input type="date" id="editFechaFin"></div>
+        <div class="form-group"><label>Comprobante de Pago</label><input type="file" id="editComprobante" accept="image/*" onchange="previewEditComprobante(this)"></div>
+        <div class="form-group" id="editPreviewContainer" style="display:none;"><label>Vista Previa</label><img id="editPreviewImg" style="max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"></div>
+      </div>
+      <div class="btn-group">
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        <button type="button" class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="historialModal">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <h2>Historial de Pagos</h2>
+      <button class="modal-close" onclick="document.getElementById('historialModal').classList.remove('active')">&times;</button>
+    </div>
+    <div id="historialContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="reciboModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h2>Recibo de Pago</h2>
+      <button class="modal-close" onclick="document.getElementById('reciboModal').classList.remove('active')">&times;</button>
+    </div>
+    <div id="reciboContent"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="imprimirRecibo()">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DB_NAME = 'InventarioArriendos';
+const STORE = 'pagos';
+let db;
+let chartInstance = null;
+let currentTab = 'todos';
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(); };
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+function getAll() {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function add(record) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).add(record);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function put(record) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).put(record);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function del(id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function clearAll() {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function formatCurrency(val) {
+  return '$' + Number(val).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function formatMes(mes) {
+  if (!mes) return '-';
+  const [y, m] = mes.split('-');
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return (meses[parseInt(m)-1] || m) + ' ' + y;
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function capitalizar(str) {
+  return str.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function aplicarCapitalizacion(id) {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    el.value = capitalizar(el.value);
+    el.setSelectionRange(start, end);
+  });
+}
+
+aplicarCapitalizacion('arrendatario');
+aplicarCapitalizacion('codigo');
+aplicarCapitalizacion('universidad');
+aplicarCapitalizacion('editArrendatario');
+aplicarCapitalizacion('editCodigo');
+aplicarCapitalizacion('editUniversidad');
+
+function previewComprobante(input) {
+  const container = document.getElementById('previewContainer');
+  const img = document.getElementById('previewImg');
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; container.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    container.style.display = 'none';
+    img.src = '';
+  }
+}
+
+function previewEditComprobante(input) {
+  const container = document.getElementById('editPreviewContainer');
+  const img = document.getElementById('editPreviewImg');
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; container.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    container.style.display = 'none';
+    img.src = '';
+  }
+}
+
+function compressImage(dataUrl, maxWidth = 800, quality = 0.7) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = (h * maxWidth) / w; w = maxWidth; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderTabla();
+}
+
+function getEstadoAlerta(d) {
+  if (d.estado === 'pendiente') return 'atrasado';
+  const mesesPagados = d.mesesPagados || [];
+  if (mesesPagados.length >= (d.mesesTotales || 12)) return 'aldia';
+  return 'atencion';
+}
+
+function calcularSaldo(d) {
+  const mesesPagados = d.mesesPagados || [];
+  const totalEsperado = (d.mesesTotales || 12) * d.monto;
+  const totalPagado = mesesPagados.length * d.monto;
+  return totalEsperado - totalPagado;
+}
+
+async function renderTabla() {
+  const datos = await getAll();
+  const buscar = document.getElementById('buscar').value.toLowerCase();
+  const filtroEstado = document.getElementById('filtroEstado').value;
+  const filtroMes = document.getElementById('filtroMes').value;
+
+  let filtrados = datos.filter(d => {
+    const matchBuscar = !buscar || (d.arrendatario || '').toLowerCase().includes(buscar) || (d.codigo || '').toLowerCase().includes(buscar);
+    const matchEstado = !filtroEstado || d.estado === filtroEstado;
+    const matchMes = !filtroMes || d.mesPago === filtroMes;
+    let matchTab = true;
+    if (currentTab === 'departamentos') matchTab = d.tipo === 'departamento';
+    else if (currentTab === 'locales') matchTab = d.tipo === 'local';
+    else if (currentTab === 'atrasados') matchTab = d.estado === 'pendiente';
+    else if (currentTab === 'aldia') matchTab = (d.mesesPagados || []).length >= (d.mesesTotales || 12);
+    return matchBuscar && matchEstado && matchMes && matchTab;
+  });
+
+  filtrados.sort((a, b) => (a.mesPago || '').localeCompare(b.mesPago || ''));
+
+  const tbody = document.getElementById('tablaBody');
+  const empty = document.getElementById('emptyState');
+
+  if (filtrados.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    tbody.innerHTML = filtrados.map(d => {
+      const totales = d.mesesTotales || 12;
+      const mesesPagados = d.mesesPagados || [];
+      const pagados = Math.min(mesesPagados.length, totales);
+      const circulos = Array.from({ length: totales }, (_, i) =>
+        `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin:1px;border:2px solid rgba(255,255,255,0.15);background:${i < pagados ? 'var(--success)' : 'transparent'};box-shadow:${i < pagados ? '0 0 4px var(--success-glow)' : 'none'};"></span>`
+      ).join('');
+      const saldo = calcularSaldo(d);
+      const estadoAlerta = getEstadoAlerta(d);
+      return `
+      <tr>
+        <td><strong style="color:var(--text-bright)">${esc(d.codigo)}</strong></td>
+        <td><span class="badge badge-${d.tipo === 'departamento' ? 'departamento' : 'local'}">${d.tipo === 'departamento' ? 'Dep' : 'Local'}</span></td>
+        <td><strong style="color:var(--text-bright)">${esc(d.arrendatario)}</strong></td>
+        <td><div style="display:flex;flex-wrap:wrap;gap:2px;max-width:100px;">${circulos}</div><span style="font-size:0.72em;color:var(--text-muted);margin-left:4px;">${pagados}/${totales}</span></td>
+        <td>${formatMes(d.mesPago)}</td>
+        <td>${formatCurrency(d.monto)}</td>
+        <td style="color:${saldo > 0 ? 'var(--danger)' : 'var(--success)'};font-weight:600;">${saldo > 0 ? formatCurrency(saldo) : 'Al día'}</td>
+        <td><span class="badge badge-${estadoAlerta}">${estadoAlerta === 'aldia' ? 'Al Día' : estadoAlerta === 'atrasado' ? 'Atrasado' : 'Atención'}</span></td>
+        <td>${d.metodoPago || '-'}</td>
+        <td>${d.comprobante ? `<img src="${d.comprobante}" onclick="verComprobante('${d.id}')" style="width:36px;height:36px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);">` : '-'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-primary" onclick="abrirEditar(${d.id})">Editar</button>
+            <button class="btn btn-success" onclick="verHistorial(${d.id})">Historial</button>
+            <button class="btn btn-warning" onclick="verRecibo(${d.id})">Recibo</button>
+            <button class="btn btn-danger" onclick="eliminarRegistro(${d.id})">Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `;
+    }).join('');
+  }
+
+  actualizarDashboard(datos);
+  actualizarAlertas(datos);
+  actualizarFiltroMes(datos);
+  actualizarGrafico(datos);
+}
+
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function actualizarDashboard(datos) {
+  const total = datos.length;
+  const pagado = datos.filter(d => d.estado === 'pagado').reduce((s, d) => s + Number(d.monto), 0);
+  const pendiente = datos.filter(d => d.estado === 'pendiente').reduce((s, d) => s + Number(d.monto), 0);
+  const atrasados = datos.filter(d => d.estado === 'pendiente').length;
+  const proximos = datos.filter(d => d.estado === 'pendiente').sort((a, b) => (a.mesPago || '').localeCompare(b.mesPago || ''));
+
+  document.getElementById('statUnidades').textContent = total;
+  document.getElementById('statPagado').textContent = formatCurrency(pagado);
+  document.getElementById('statPendiente').textContent = formatCurrency(pendiente);
+  document.getElementById('statAtrasados').textContent = atrasados;
+  document.getElementById('statProximo').textContent = proximos.length > 0 ? formatMes(proximos[0].mesPago) : '-';
+
+  const totalMonto = pagado + pendiente;
+  const pctPagado = totalMonto > 0 ? (pagado / totalMonto * 100) : 0;
+  const pctPendiente = totalMonto > 0 ? (pendiente / totalMonto * 100) : 0;
+  document.getElementById('progressPagado').style.width = pctPagado + '%';
+  document.getElementById('progressPendiente').style.width = pctPendiente + '%';
+
+  const morosidad = total > 0 ? (atrasados / total * 100) : 0;
+  document.getElementById('statMorosidad').textContent = morosidad.toFixed(1) + '%';
+}
+
+function actualizarAlertas(datos) {
+  const panel = document.getElementById('alertPanel');
+  const list = document.getElementById('alertList');
+  const atrasados = datos.filter(d => d.estado === 'pendiente');
+  const porVencer = datos.filter(d => {
+    if (!d.fechaFin) return false;
+    const fin = new Date(d.fechaFin);
+    const ahora = new Date();
+    const diff = (fin - ahora) / (1000 * 60 * 60 * 24);
+    return diff > 0 && diff <= 30;
+  });
+
+  if (atrasados.length === 0 && porVencer.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+  let html = '';
+  atrasados.forEach(d => {
+    html += `<div class="alert-item"><span>${esc(d.arrendatario)} (${esc(d.codigo)})</span><span style="color:var(--danger);font-weight:600;">Pago atrasado</span></div>`;
+  });
+  porVencer.forEach(d => {
+    html += `<div class="alert-item"><span>${esc(d.arrendatario)} (${esc(d.codigo)})</span><span style="color:var(--warning);font-weight:600;">Contrato por vencer</span></div>`;
+  });
+  list.innerHTML = html;
+}
+
+function actualizarFiltroMes(datos) {
+  const select = document.getElementById('filtroMes');
+  const current = select.value;
+  const meses = [...new Set(datos.flatMap(d => d.mesesPagados || [d.mesPago]).filter(Boolean))].sort();
+  select.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m => `<option value="${m}">${formatMes(m)}</option>`).join('');
+  select.value = current;
+}
+
+function actualizarGrafico(datos) {
+  const ctx = document.getElementById('ingresosChart').getContext('2d');
+  const meses = [...new Set(datos.flatMap(d => d.mesesPagados || [d.mesPago]).filter(Boolean))].sort();
+  const ingresos = meses.map(m => datos.reduce((s, d) => {
+    if ((d.mesesPagados || []).includes(m)) return s + d.monto;
+    return s;
+  }, 0));
+
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: meses.map(formatMes),
+      datasets: [{
+        label: 'Ingresos',
+        data: ingresos,
+        backgroundColor: 'rgba(129,140,248,0.4)',
+        borderColor: 'rgba(129,140,248,0.8)',
+        borderWidth: 2,
+        borderRadius: 8,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#7c8aa0' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+        y: { ticks: { color: '#7c8aa0' }, grid: { color: 'rgba(255,255,255,0.03)' } }
+      }
+    }
+  });
+}
+
+function limpiarFormulario() {
+  document.getElementById('pagoForm').reset();
+  document.getElementById('previewContainer').style.display = 'none';
+  document.getElementById('previewImg').src = '';
+}
+
+document.getElementById('pagoForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  let comprobante = null;
+  const fileInput = document.getElementById('comprobante');
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    const dataUrl = await new Promise((resolve) => {
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(fileInput.files[0]);
+    });
+    comprobante = await compressImage(dataUrl);
+  }
+  const arrendatario = document.getElementById('arrendatario').value.trim();
+  const codigo = document.getElementById('codigo').value.trim();
+  const mesPago = document.getElementById('mesPago').value;
+  const datos = await getAll();
+  const existente = datos.find(d => d.arrendatario.toLowerCase() === arrendatario.toLowerCase() || d.codigo.toLowerCase() === codigo.toLowerCase());
+
+  if (existente) {
+    if (!existente.mesesPagados) existente.mesesPagados = [];
+    if (existente.estado === 'pagado' && !existente.mesesPagados.includes(mesPago)) {
+      existente.mesesPagados.push(mesPago);
+    }
+    existente.mesPago = mesPago;
+    existente.mesesTotales = parseInt(document.getElementById('mesesTotales').value);
+    const nuevoMonto = parseFloat(document.getElementById('monto').value);
+    existente.monto = (existente.monto || 0) + nuevoMonto;
+    existente.fechaPago = document.getElementById('fechaPago').value || null;
+    existente.estado = document.getElementById('estado').value;
+    existente.metodoPago = document.getElementById('metodoPago').value;
+    existente.deposito = parseFloat(document.getElementById('deposito').value) || 0;
+    existente.fechaInicio = document.getElementById('fechaInicio').value || null;
+    existente.fechaFin = document.getElementById('fechaFin').value || null;
+    existente.telefono = document.getElementById('telefono').value.trim();
+    existente.universidad = document.getElementById('universidad').value.trim();
+    existente.tamano = document.getElementById('tamano').value;
+    if (comprobante) existente.comprobante = comprobante;
+    await put(existente);
+    showToast(`Mes ${formatMes(mesPago)} registrado para ${arrendatario}`);
+  } else {
+    const registro = {
+      codigo: codigo,
+      tipo: document.getElementById('tipo').value,
+      tamano: document.getElementById('tamano').value,
+      arrendatario: arrendatario,
+      telefono: document.getElementById('telefono').value.trim(),
+      universidad: document.getElementById('universidad').value.trim(),
+      mesPago: mesPago,
+      mesesPagados: document.getElementById('estado').value === 'pagado' ? [mesPago] : [],
+      mesesTotales: parseInt(document.getElementById('mesesTotales').value),
+      monto: parseFloat(document.getElementById('monto').value),
+      fechaPago: document.getElementById('fechaPago').value || null,
+      estado: document.getElementById('estado').value,
+      metodoPago: document.getElementById('metodoPago').value,
+      deposito: parseFloat(document.getElementById('deposito').value) || 0,
+      fechaInicio: document.getElementById('fechaInicio').value || null,
+      fechaFin: document.getElementById('fechaFin').value || null,
+      comprobante: comprobante,
+      creado: new Date().toISOString()
+    };
+    await add(registro);
+    showToast('Registro agregado correctamente');
+  }
+  limpiarFormulario();
+  renderTabla();
+});
+
+async function eliminarRegistro(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  await del(id);
+  renderTabla();
+  showToast('Registro eliminado');
+}
+
+function abrirEditar(id) {
+  getAll().then(datos => {
+    const d = datos.find(x => x.id === id);
+    if (!d) return;
+    document.getElementById('editId').value = d.id;
+    document.getElementById('editCodigo').value = d.codigo;
+    document.getElementById('editTipo').value = d.tipo;
+    document.getElementById('editTamano').value = d.tamano || 'estandar';
+    document.getElementById('editArrendatario').value = d.arrendatario;
+    document.getElementById('editTelefono').value = d.telefono || '';
+    document.getElementById('editUniversidad').value = d.universidad || '';
+    document.getElementById('editMesPago').value = d.mesPago;
+    document.getElementById('editMesesTotales').value = d.mesesTotales || 12;
+    document.getElementById('editMonto').value = d.monto;
+    document.getElementById('editFechaPago').value = d.fechaPago || '';
+    document.getElementById('editEstado').value = d.estado;
+    document.getElementById('editMetodoPago').value = d.metodoPago || 'transferencia';
+    document.getElementById('editDeposito').value = d.deposito || 0;
+    document.getElementById('editFechaInicio').value = d.fechaInicio || '';
+    document.getElementById('editFechaFin').value = d.fechaFin || '';
+    const previewContainer = document.getElementById('editPreviewContainer');
+    const previewImg = document.getElementById('editPreviewImg');
+    if (d.comprobante) {
+      previewImg.src = d.comprobante;
+      previewContainer.style.display = 'block';
+    } else {
+      previewContainer.style.display = 'none';
+      previewImg.src = '';
+    }
+    document.getElementById('editComprobante').value = '';
+    document.getElementById('editModal').classList.add('active');
+  });
+}
+
+function cerrarModal() {
+  document.getElementById('editModal').classList.remove('active');
+}
+
+document.getElementById('editForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = parseInt(document.getElementById('editId').value);
+  const datos = await getAll();
+  const original = datos.find(x => x.id === id);
+  if (!original) return;
+  const fileInput = document.getElementById('editComprobante');
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    const dataUrl = await new Promise((resolve) => {
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(fileInput.files[0]);
+    });
+    original.comprobante = await compressImage(dataUrl);
+  }
+  const mesPago = document.getElementById('editMesPago').value;
+  const estado = document.getElementById('editEstado').value;
+  if (!original.mesesPagados) original.mesesPagados = [];
+  if (estado === 'pagado' && !original.mesesPagados.includes(mesPago)) {
+    original.mesesPagados.push(mesPago);
+  }
+  const nuevoMonto = parseFloat(document.getElementById('editMonto').value);
+  Object.assign(original, {
+    codigo: document.getElementById('editCodigo').value.trim(),
+    tipo: document.getElementById('editTipo').value,
+    tamano: document.getElementById('editTamano').value,
+    arrendatario: document.getElementById('editArrendatario').value.trim(),
+    telefono: document.getElementById('editTelefono').value.trim(),
+    universidad: document.getElementById('editUniversidad').value.trim(),
+    mesPago: mesPago,
+    mesesTotales: parseInt(document.getElementById('editMesesTotales').value),
+    monto: (original.monto || 0) + nuevoMonto,
+    fechaPago: document.getElementById('editFechaPago').value || null,
+    estado: estado,
+    metodoPago: document.getElementById('editMetodoPago').value,
+    deposito: parseFloat(document.getElementById('editDeposito').value) || 0,
+    fechaInicio: document.getElementById('editFechaInicio').value || null,
+    fechaFin: document.getElementById('editFechaFin').value || null
+  });
+  await put(original);
+  cerrarModal();
+  renderTabla();
+  showToast('Registro actualizado');
+});
+
+async function eliminarTodo() {
+  if (!confirm('¿Eliminar TODOS los registros? Esta acción no se puede deshacer.')) return;
+  await clearAll();
+  renderTabla();
+  showToast('Todos los registros eliminados');
+}
+
+function verHistorial(id) {
+  getAll().then(datos => {
+    const d = datos.find(x => x.id === id);
+    if (!d) return;
+    const mesesPagados = d.mesesPagados || [];
+    const html = `
+      <div class="info-grid">
+        <div class="info-item"><div class="label">Unidad</div><div class="value">${esc(d.codigo)}</div></div>
+        <div class="info-item"><div class="label">Arrendatario</div><div class="value">${esc(d.arrendatario)}</div></div>
+        <div class="info-item"><div class="label">Teléfono</div><div class="value">${esc(d.telefono || '-')}</div></div>
+        <div class="info-item"><div class="label">Universidad</div><div class="value">${esc(d.universidad || '-')}</div></div>
+        <div class="info-item"><div class="label">Tipo</div><div class="value">${d.tipo === 'departamento' ? 'Departamento' : 'Local Comercial'}</div></div>
+        <div class="info-item"><div class="label">Tamaño</div><div class="value">${d.tamano === 'grande' ? 'Grande' : 'Estándar'}</div></div>
+        <div class="info-item"><div class="label">Monto Mensual</div><div class="value">${formatCurrency(d.monto)}</div></div>
+        <div class="info-item"><div class="label">Total Pagado</div><div class="value">${formatCurrency(d.monto * mesesPagados.length)}</div></div>
+        <div class="info-item"><div class="label">Saldo Pendiente</div><div class="value" style="color:var(--danger)">${formatCurrency(calcularSaldo(d))}</div></div>
+        <div class="info-item"><div class="label">Depósito Garantía</div><div class="value">${formatCurrency(d.deposito || 0)}</div></div>
+        <div class="info-item"><div class="label">Contrato</div><div class="value">${d.fechaInicio || '?'} → ${d.fechaFin || '?'}</div></div>
+      </div>
+      <h3 style="color:var(--text-bright);margin:20px 0 12px;font-size:1em;">Meses Pagados (${mesesPagados.length}/${d.mesesTotales || 12})</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${mesesPagados.map(m => `<span class="badge badge-pagado">${formatMes(m)}</span>`).join('') || '<span style="color:var(--text-muted);font-size:0.85em;">Sin pagos registrados</span>'}
+      </div>
+    `;
+    document.getElementById('historialContent').innerHTML = html;
+    document.getElementById('historialModal').classList.add('active');
+  });
+}
+
+function verRecibo(id) {
+  getAll().then(datos => {
+    const d = datos.find(x => x.id === id);
+    if (!d) return;
+    const html = `
+      <div style="text-align:center;padding:20px;">
+        <div style="font-size:2em;margin-bottom:12px;">&#128179;</div>
+        <h3 style="color:var(--text-bright);margin-bottom:4px;">Recibo de Pago</h3>
+        <p style="color:var(--text-muted);font-size:0.85em;margin-bottom:20px;">${new Date().toLocaleDateString('es-CL')}</p>
+        <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:16px;text-align:left;border:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Unidad:</span><strong>${esc(d.codigo)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Arrendatario:</span><strong>${esc(d.arrendatario)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Mes:</span><strong>${formatMes(d.mesPago)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Monto:</span><strong style="color:var(--success);">${formatCurrency(d.monto)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text-muted);">Método:</span><strong>${d.metodoPago || '-'}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-muted);">Estado:</span><strong style="color:var(--success);">Pagado</strong></div>
+        </div>
+      </div>
+    `;
+    document.getElementById('reciboContent').innerHTML = html;
+    document.getElementById('reciboModal').classList.add('active');
+  });
+}
+
+function imprimirRecibo() {
+  const content = document.getElementById('reciboContent').innerHTML;
+  const win = window.open('', '_blank');
+  win.document.write('<html><head><title>Recibo</title><style>body{font-family:sans-serif;padding:40px;background:#fff;color:#333;}</style></head><body>' + content + '</body></html>');
+  win.document.close();
+  win.print();
+}
+
+function verComprobante(id) {
+  getAll().then(datos => {
+    const d = datos.find(x => x.id === id);
+    if (!d || !d.comprobante) return;
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:3000;display:flex;justify-content:center;align-items:center;cursor:zoomout;backdrop-filter:blur(8px);';
+    overlay.onclick = () => overlay.remove();
+    const img = document.createElement('img');
+    img.src = d.comprobante;
+    img.style.cssText = 'max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.5);';
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
+  });
+}
+
+function descargar(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportarCSV() {
+  getAll().then(datos => {
+    if (datos.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
+    const headers = ['Código','Tipo','Tamaño','Arrendatario','Teléfono','Universidad','Mes de Pago','Meses Pagados','Meses Totales','Monto','Fecha de Pago','Estado','Método de Pago','Depósito','Fecha Inicio','Fecha Fin','Comprobante'];
+    const rows = datos.map(d => [d.codigo, d.tipo, d.tamano, d.arrendatario, d.telefono || '', d.universidad || '', d.mesPago, (d.mesesPagados || []).join(';'), d.mesesTotales || 12, d.monto, d.fechaPago || '', d.estado, d.metodoPago || '', d.deposito || 0, d.fechaInicio || '', d.fechaFin || '', d.comprobante ? 'Sí' : 'No']);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    descargar('inventario_arriendos.csv', '\uFEFF' + csv, 'text/csv;charset=utf-8');
+    showToast('CSV exportado');
+  });
+}
+
+function exportarJSON() {
+  getAll().then(datos => {
+    if (datos.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
+    descargar('inventario_arriendos.json', JSON.stringify(datos, null, 2), 'application/json');
+    showToast('JSON exportado');
+  });
+}
+
+function importarArchivo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      let datos;
+      if (file.name.endsWith('.json')) {
+        datos = JSON.parse(e.target.result);
+      } else {
+        datos = parseCSV(e.target.result);
+      }
+      if (!Array.isArray(datos) || datos.length === 0) {
+        showToast('Archivo vacío o inválido', 'error');
+        return;
+      }
+      for (const d of datos) {
+        await add({
+          codigo: d.codigo || '',
+          tipo: d.tipo || 'departamento',
+          tamano: d.tamano || 'estandar',
+          arrendatario: d.arrendatario || '',
+          telefono: d.telefono || '',
+          universidad: d.universidad || '',
+          mesPago: d.mesPago || '',
+          mesesPagados: d.mesesPagados || [],
+          mesesTotales: parseInt(d.mesesTotales) || 12,
+          monto: parseFloat(d.monto) || 0,
+          fechaPago: d.fechaPago || null,
+          estado: d.estado || 'pendiente',
+          metodoPago: d.metodoPago || 'transferencia',
+          deposito: parseFloat(d.deposito) || 0,
+          fechaInicio: d.fechaInicio || null,
+          fechaFin: d.fechaFin || null,
+          comprobante: d.comprobante || null,
+          creado: new Date().toISOString()
+        });
+      }
+      renderTabla();
+      showToast(`${datos.length} registros importados`);
+    } catch (err) {
+      showToast('Error al importar: ' + err.message, 'error');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    const obj = {};
+    headers.forEach((h, i) => {
+      if (h.includes('código') || h.includes('codigo')) obj.codigo = vals[i] || '';
+      else if (h.includes('tipo')) obj.tipo = vals[i] || 'departamento';
+      else if (h.includes('tamaño') || h.includes('tamano')) obj.tamano = vals[i] || 'estandar';
+      else if (h.includes('arrendatario')) obj.arrendatario = vals[i] || '';
+      else if (h.includes('teléfono') || h.includes('telefono')) obj.telefono = vals[i] || '';
+      else if (h.includes('universidad')) obj.universidad = vals[i] || '';
+      else if (h.includes('mes de pago') || h.includes('mes_pago')) obj.mesPago = vals[i] || '';
+      else if (h.includes('meses pagados') || h.includes('meses_pagados')) obj.mesesPagados = vals[i] ? vals[i].split(';').filter(Boolean) : [];
+      else if (h.includes('meses totales') || h.includes('meses_totales')) obj.mesesTotales = vals[i] || '12';
+      else if (h.includes('monto')) obj.monto = vals[i] || '0';
+      else if (h.includes('fecha de pago') || h.includes('fecha_pago')) obj.fechaPago = vals[i] || null;
+      else if (h.includes('estado')) obj.estado = vals[i] || 'pendiente';
+      else if (h.includes('método') || h.includes('metodo')) obj.metodoPago = vals[i] || 'transferencia';
+      else if (h.includes('depósito') || h.includes('deposito')) obj.deposito = vals[i] || '0';
+      else if (h.includes('fecha inicio') || h.includes('fecha_inicio')) obj.fechaInicio = vals[i] || null;
+      else if (h.includes('fecha fin') || h.includes('fecha_fin')) obj.fechaFin = vals[i] || null;
+      else if (h.includes('comprobante')) obj.comprobante = vals[i] === 'Sí' ? null : null;
+    });
+    return obj;
+  });
+}
+
+document.getElementById('editModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) cerrarModal();
+});
+
+initDB().then(() => renderTabla());
+</script>
+</body>
+</html>

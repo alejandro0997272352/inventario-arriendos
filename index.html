@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventario de Pagos de Arriendos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="manifest" href="manifest.json">
@@ -35,7 +38,7 @@
   --radius-sm: 14px;
 }
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #08080f;
   color: var(--text);
   min-height: 100vh;
@@ -54,6 +57,18 @@ body::before {
     radial-gradient(ellipse 50% 60% at 50% 90%, rgba(16,185,129,0.06) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
+  animation: gradientShift 15s ease infinite;
+  background-size: 200% 200%;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
 }
 .top-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); }
 .nav-brand { display: flex; align-items: center; gap: 10px; }
@@ -302,6 +317,22 @@ tbody tr:last-child td { border-bottom: none; }
 .empty-state-icon { font-size: 3em; margin-bottom: 14px; opacity: 0.35; }
 .empty-state p { font-size: 1em; }
 
+.skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+.skeleton-card { height: 120px; margin-bottom: 16px; }
+.skeleton-row { height: 40px; margin-bottom: 8px; }
+.skeleton-text { height: 16px; margin-bottom: 8px; }
+
+.color-theme-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: all 0.3s; }
+.color-theme-btn:hover { transform: scale(1.1); }
+.color-theme-btn.active { border-color: #fff; box-shadow: 0 0 12px rgba(255,255,255,0.3); }
+
+.compact-mode .card { padding: 16px; margin-bottom: 16px; }
+.compact-mode .stat-card { padding: 12px; }
+.compact-mode .form-group input, .compact-mode .form-group select { padding: 8px 12px; }
+.compact-mode .btn { padding: 8px 16px; font-size: 0.8em; }
+.compact-mode table { font-size: 0.8em; }
+.compact-mode th, .compact-mode td { padding: 8px; }
+
 .modal-overlay {
   display: none;
   position: fixed;
@@ -423,6 +454,13 @@ tbody tr:last-child td { border-bottom: none; }
 @keyframes shimmer { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
 @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 @keyframes countUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes glow { 0%,100% { box-shadow: 0 0 20px rgba(99,102,241,0.3); } 50% { box-shadow: 0 0 40px rgba(99,102,241,0.5); } }
+@keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { transform: scale(1.05); } 70% { transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -463,8 +501,16 @@ tbody tr:last-child td { border-bottom: none; }
   </div>
   <div class="nav-actions">
     <button class="nav-btn" onclick="toggleTema()" title="Cambiar tema (Ctrl+T)">&#127769;</button>
+    <button class="nav-btn" onclick="toggleCompacto()" title="Modo compacto">&#128200;</button>
     <button class="nav-btn" onclick="busquedaAvanzada()" title="Búsqueda avanzada (Ctrl+F)">&#128269;</button>
     <button class="nav-btn" onclick="exportarPDF()" title="Exportar PDF (Ctrl+E)">&#128196;</button>
+    <div style="display:flex;gap:4px;align-items:center;">
+      <button class="color-theme-btn active" style="background:#6366f1;" onclick="setColorTheme('#6366f1')" title="Índigo"></button>
+      <button class="color-theme-btn" style="background:#10b981;" onclick="setColorTheme('#10b981')" title="Esmeralda"></button>
+      <button class="color-theme-btn" style="background:#f59e0b;" onclick="setColorTheme('#f59e0b')" title="Ámbar"></button>
+      <button class="color-theme-btn" style="background:#ef4444;" onclick="setColorTheme('#ef4444')" title="Rojo"></button>
+      <button class="color-theme-btn" style="background:#8b5cf6;" onclick="setColorTheme('#8b5cf6')" title="Violeta"></button>
+    </div>
   </div>
 </nav>
 <div class="container">
@@ -1442,25 +1488,25 @@ function toggleTema() {
     localStorage.setItem('tema', 'oscuro');
   } else {
     body.classList.add('tema-claro');
-    body.style.background = '#f8fafc';
+    body.style.background = '#e8ecf1';
     body.style.backgroundImage = 'none';
-    body.style.color = '#1e293b';
-    document.documentElement.style.setProperty('--text', '#1e293b');
-    document.documentElement.style.setProperty('--text-bright', '#0f172a');
+    body.style.color = '#334155';
+    document.documentElement.style.setProperty('--text', '#334155');
+    document.documentElement.style.setProperty('--text-bright', '#1e293b');
     document.documentElement.style.setProperty('--text-muted', '#64748b');
-    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.75)');
-    document.documentElement.style.setProperty('--glass-strong', 'rgba(255,255,255,0.9)');
-    document.documentElement.style.setProperty('--glass-border', 'rgba(0,0,0,0.1)');
-    document.documentElement.style.setProperty('--shadow', '0 4px 12px rgba(0,0,0,0.06)');
-    document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.1)');
+    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.6)');
+    document.documentElement.style.setProperty('--glass-strong', 'rgba(255,255,255,0.8)');
+    document.documentElement.style.setProperty('--glass-border', 'rgba(0,0,0,0.08)');
+    document.documentElement.style.setProperty('--shadow', '0 4px 12px rgba(0,0,0,0.04)');
+    document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.08)');
     document.documentElement.style.setProperty('--primary', '#6366f1');
-    document.documentElement.style.setProperty('--primary-glow', 'rgba(99,102,241,0.3)');
+    document.documentElement.style.setProperty('--primary-glow', 'rgba(99,102,241,0.2)');
     document.documentElement.style.setProperty('--success', '#10b981');
-    document.documentElement.style.setProperty('--success-glow', 'rgba(16,185,129,0.25)');
+    document.documentElement.style.setProperty('--success-glow', 'rgba(16,185,129,0.15)');
     document.documentElement.style.setProperty('--danger', '#ef4444');
-    document.documentElement.style.setProperty('--danger-glow', 'rgba(239,68,68,0.25)');
+    document.documentElement.style.setProperty('--danger-glow', 'rgba(239,68,68,0.15)');
     document.documentElement.style.setProperty('--warning', '#f59e0b');
-    document.documentElement.style.setProperty('--warning-glow', 'rgba(245,158,11,0.25)');
+    document.documentElement.style.setProperty('--warning-glow', 'rgba(245,158,11,0.15)');
     localStorage.setItem('tema', 'claro');
   }
 }
@@ -1470,25 +1516,25 @@ function aplicarTemaGuardado() {
   if (tema === 'claro') {
     const body = document.body;
     body.classList.add('tema-claro');
-    body.style.background = '#f8fafc';
+    body.style.background = '#e8ecf1';
     body.style.backgroundImage = 'none';
-    body.style.color = '#1e293b';
-    document.documentElement.style.setProperty('--text', '#1e293b');
-    document.documentElement.style.setProperty('--text-bright', '#0f172a');
+    body.style.color = '#334155';
+    document.documentElement.style.setProperty('--text', '#334155');
+    document.documentElement.style.setProperty('--text-bright', '#1e293b');
     document.documentElement.style.setProperty('--text-muted', '#64748b');
-    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.75)');
-    document.documentElement.style.setProperty('--glass-strong', 'rgba(255,255,255,0.9)');
-    document.documentElement.style.setProperty('--glass-border', 'rgba(0,0,0,0.1)');
-    document.documentElement.style.setProperty('--shadow', '0 4px 12px rgba(0,0,0,0.06)');
-    document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.1)');
+    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.6)');
+    document.documentElement.style.setProperty('--glass-strong', 'rgba(255,255,255,0.8)');
+    document.documentElement.style.setProperty('--glass-border', 'rgba(0,0,0,0.08)');
+    document.documentElement.style.setProperty('--shadow', '0 4px 12px rgba(0,0,0,0.04)');
+    document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.08)');
     document.documentElement.style.setProperty('--primary', '#6366f1');
-    document.documentElement.style.setProperty('--primary-glow', 'rgba(99,102,241,0.3)');
+    document.documentElement.style.setProperty('--primary-glow', 'rgba(99,102,241,0.2)');
     document.documentElement.style.setProperty('--success', '#10b981');
-    document.documentElement.style.setProperty('--success-glow', 'rgba(16,185,129,0.25)');
+    document.documentElement.style.setProperty('--success-glow', 'rgba(16,185,129,0.15)');
     document.documentElement.style.setProperty('--danger', '#ef4444');
-    document.documentElement.style.setProperty('--danger-glow', 'rgba(239,68,68,0.25)');
+    document.documentElement.style.setProperty('--danger-glow', 'rgba(239,68,68,0.15)');
     document.documentElement.style.setProperty('--warning', '#f59e0b');
-    document.documentElement.style.setProperty('--warning-glow', 'rgba(245,158,11,0.25)');
+    document.documentElement.style.setProperty('--warning-glow', 'rgba(245,158,11,0.15)');
   }
 }
 
@@ -2121,6 +2167,35 @@ function actualizarSelectGastos(datos) {
   // Función mantenida por compatibilidad, ya no se usa
 }
 
+function setColorTheme(color) {
+  document.documentElement.style.setProperty('--primary', color);
+  document.documentElement.style.setProperty('--primary-glow', color + '4d');
+  document.querySelectorAll('.color-theme-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  localStorage.setItem('colorTheme', color);
+  showToast('Tema de color cambiado');
+}
+
+function aplicarColorTheme() {
+  const color = localStorage.getItem('colorTheme');
+  if (color) {
+    document.documentElement.style.setProperty('--primary', color);
+    document.documentElement.style.setProperty('--primary-glow', color + '4d');
+  }
+}
+
+function toggleCompacto() {
+  document.body.classList.toggle('compact-mode');
+  const isCompact = document.body.classList.contains('compact-mode');
+  localStorage.setItem('compactMode', isCompact ? 'true' : 'false');
+  showToast(isCompact ? 'Modo compacto activado' : 'Modo expandido activado');
+}
+
+function aplicarCompactMode() {
+  const isCompact = localStorage.getItem('compactMode') === 'true';
+  if (isCompact) document.body.classList.add('compact-mode');
+}
+
 function scrollToSection(id) {
   const el = document.getElementById(id);
   if (el) {
@@ -2139,6 +2214,8 @@ document.addEventListener('keydown', (e) => {
 
 initDB().then(async () => {
   aplicarTemaGuardado();
+  aplicarColorTheme();
+  aplicarCompactMode();
   renderTabla();
   toggleComprobante();
   actualizarTipoTamano();

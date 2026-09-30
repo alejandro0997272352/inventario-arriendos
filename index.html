@@ -761,8 +761,11 @@ async function initDB() {
     console.error('Error conectando a Supabase:', error);
     showToast('Error de conexión con Supabase', 'error');
   } else {
-    document.getElementById('dbStatus').textContent = 'Supabase Conectado';
-    document.getElementById('dbStatus').className = 'db-status cloud';
+    const dbStatus = document.getElementById('dbStatus');
+    if (dbStatus) {
+      dbStatus.textContent = 'Supabase Conectado';
+      dbStatus.className = 'db-status cloud';
+    }
   }
 }
 

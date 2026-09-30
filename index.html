@@ -1296,7 +1296,9 @@ function renderServicios() {
 
 function toggleDashboard() {
   const container = document.getElementById('dashboardContainer');
+  if (!container) return;
   const panels = Array.from(container.children);
+  if (panels.length === 0) return;
   const shuffled = [...panels].sort(() => Math.random() - 0.5);
   shuffled.forEach(panel => container.appendChild(panel));
   showToast('Dashboard reorganizado');
@@ -1304,6 +1306,7 @@ function toggleDashboard() {
 
 function initDragAndDrop() {
   const container = document.getElementById('dashboardContainer');
+  if (!container) return;
   let draggedItem = null;
   container.addEventListener('dragstart', (e) => {
     draggedItem = e.target.closest('.dashboard-panel');
@@ -1312,10 +1315,12 @@ function initDragAndDrop() {
   container.addEventListener('dragover', (e) => {
     e.preventDefault();
     const afterElement = getDragAfterElement(container, e.clientY);
-    if (afterElement == null) {
-      container.appendChild(draggedItem);
-    } else {
-      container.insertBefore(draggedItem, afterElement);
+    if (draggedItem) {
+      if (afterElement == null) {
+        container.appendChild(draggedItem);
+      } else {
+        container.insertBefore(draggedItem, afterElement);
+      }
     }
   });
   container.addEventListener('dragend', () => {

@@ -1008,10 +1008,12 @@ async function renderTabla() {
 
     const totalMonto = filtrados.reduce((s, d) => s + d.monto, 0);
     const tabNames = { todos: 'Todos', departamentos: 'Departamentos', locales: 'Locales', atrasados: 'Atrasados', aldia: 'Al Día' };
-    document.getElementById('tabSummary').innerHTML = `<strong>${tabNames[currentTab]}:</strong> ${filtrados.length} unidades | Total: <span style="color:var(--success)">${formatCurrency(totalMonto)}</span>`;
+    const tabSummary = document.getElementById('tabSummary');
+    if (tabSummary) tabSummary.innerHTML = `<strong>${tabNames[currentTab]}:</strong> ${filtrados.length} unidades | Total: <span style="color:var(--success)">${formatCurrency(totalMonto)}</span>`;
 
     const tbody = document.getElementById('tablaBody');
     const empty = document.getElementById('emptyState');
+    if (!tbody || !empty) return;
 
     if (filtrados.length === 0) {
       tbody.innerHTML = '';

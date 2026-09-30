@@ -1420,21 +1420,23 @@ function getDragAfterElement(container, y) {
 
 function toggleTema() {
   const body = document.body;
-  const isLight = body.style.background === '#f8fafc' || body.style.background === '#f0f4f8';
+  const isLight = body.classList.contains('tema-claro');
   if (isLight) {
-    body.style.background = '#08080f';
+    body.classList.remove('tema-claro');
+    body.style.background = '';
     body.style.backgroundImage = '';
-    body.style.color = '#e2e8f0';
-    document.documentElement.style.setProperty('--text', '#e2e8f0');
-    document.documentElement.style.setProperty('--text-bright', '#f8fafc');
-    document.documentElement.style.setProperty('--text-muted', '#7c8aa0');
-    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.04)');
-    document.documentElement.style.setProperty('--glass-strong', 'rgba(255,255,255,0.07)');
-    document.documentElement.style.setProperty('--glass-border', 'rgba(255,255,255,0.09)');
-    document.documentElement.style.setProperty('--shadow', '0 8px 32px rgba(0,0,0,0.25)');
-    document.documentElement.style.setProperty('--shadow-lg', '0 10px 15px -3px rgba(0,0,0,0.08)');
+    body.style.color = '';
+    document.documentElement.style.removeProperty('--text');
+    document.documentElement.style.removeProperty('--text-bright');
+    document.documentElement.style.removeProperty('--text-muted');
+    document.documentElement.style.removeProperty('--glass');
+    document.documentElement.style.removeProperty('--glass-strong');
+    document.documentElement.style.removeProperty('--glass-border');
+    document.documentElement.style.removeProperty('--shadow');
+    document.documentElement.style.removeProperty('--shadow-lg');
     localStorage.setItem('tema', 'oscuro');
   } else {
+    body.classList.add('tema-claro');
     body.style.background = '#f8fafc';
     body.style.backgroundImage = 'none';
     body.style.color = '#1e293b';
@@ -1462,6 +1464,7 @@ function aplicarTemaGuardado() {
   const tema = localStorage.getItem('tema');
   if (tema === 'claro') {
     const body = document.body;
+    body.classList.add('tema-claro');
     body.style.background = '#f8fafc';
     body.style.backgroundImage = 'none';
     body.style.color = '#1e293b';

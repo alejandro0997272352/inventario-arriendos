@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventario de Pagos de Arriendos</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -557,69 +558,44 @@ tbody tr:last-child td { border-bottom: none; }
 <div class="toast" id="toast"></div>
 
 <script>
-const DB_NAME = 'InventarioArriendos';
-const STORE = 'pagos';
-let db;
+const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
+const SUPABASE_ANON_KEY = 'tu-anon-key';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let chartInstance = null;
 let currentTab = 'todos';
 
-function initDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
-      }
-    };
-    req.onsuccess = (e) => { db = e.target.result; resolve(); };
-    req.onerror = (e) => reject(e.target.error);
-  });
+async function initDB() {
+  const { error } = await supabaseClient.from('pagos').select('id').limit(1);
+  if (error && error.code === '42P01') {
+    showToast('Creando tabla en Supabase...', 'success');
+  }
 }
 
-function getAll() {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readonly');
-    const req = tx.objectStore(STORE).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+async function getAll() {
+  const { data, error } = await supabaseClient.from('pagos').select('*');
+  if (error) throw error;
+  return data || [];
 }
 
-function add(record) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    const req = tx.objectStore(STORE).add(record);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+async function add(record) {
+  const { data, error } = await supabaseClient.from('pagos').insert([record]).select();
+  if (error) throw error;
+  return data[0];
 }
 
-function put(record) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    const req = tx.objectStore(STORE).put(record);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+async function put(record) {
+  const { error } = await supabaseClient.from('pagos').update(record).eq('id', record.id);
+  if (error) throw error;
 }
 
-function del(id) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    const req = tx.objectStore(STORE).delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+async function del(id) {
+  const { error } = await supabaseClient.from('pagos').delete().eq('id', id);
+  if (error) throw error;
 }
 
-function clearAll() {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    const req = tx.objectStore(STORE).clear();
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+async function clearAll() {
+  const { error } = await supabaseClient.from('pagos').delete().neq('id', 0);
+  if (error) throw error;
 }
 
 function formatCurrency(val) {

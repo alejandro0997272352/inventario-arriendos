@@ -841,6 +841,7 @@ function capitalizar(str) {
 
 function aplicarCapitalizacion(id) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.addEventListener('input', () => {
     const start = el.selectionStart;
     const end = el.selectionEnd;

@@ -6,6 +6,8 @@
 <title>Inventario de Pagos de Arriendos</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -497,8 +499,7 @@ tbody tr:last-child td { border-bottom: none; }
       <p>No hay registros aún. Agrega el primero con el formulario de arriba.</p>
     </div>
     <div class="btn-group">
-      <button class="btn btn-success" onclick="exportarCSV()">Exportar CSV</button>
-      <button class="btn btn-success" onclick="exportarJSON()">Exportar JSON</button>
+      <button class="btn btn-success" onclick="exportarPDF()">Exportar PDF</button>
       <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Importar CSV/JSON</button>
       <input type="file" id="importFile" accept=".csv,.json" style="display:none" onchange="importarArchivo(event)">
       <button class="btn btn-danger" onclick="eliminarTodo()">Eliminar Todo</button>
@@ -1167,24 +1168,36 @@ function descargar(filename, content, mime) {
   URL.revokeObjectURL(url);
 }
 
-function exportarCSV() {
+function exportarPDF() {
   getAll().then(datos => {
     if (datos.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-    const headers = ['Código','Tipo','Tamaño','Arrendatario','Teléfono','Mes de Pago','Meses Pagados','Meses Totales','Monto','Fecha de Pago','Estado','Método de Pago','Depósito','Fecha Inicio','Fecha Fin','Comprobante'];
-    const rows = datos.map(d => [d.codigo, d.tipo, d.tamano, d.arrendatario, d.telefono || '', d.mesPago, (d.mesesPagados || []).join(';'), d.mesesTotales || 12, d.monto, d.fechaPago || '', d.estado, d.metodoPago || '', d.deposito || 0, d.fechaInicio || '', d.fechaFin || '', d.comprobante ? 'Sí' : 'No']);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-    descargar('inventario_arriendos.csv', '\uFEFF' + csv, 'text/csv;charset=utf-8');
-    showToast('CSV exportado');
-  }).catch(error => {
-    showToast('Error al exportar: ' + error.message, 'error');
-  });
-}
-
-function exportarJSON() {
-  getAll().then(datos => {
-    if (datos.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
-    descargar('inventario_arriendos.json', JSON.stringify(datos, null, 2), 'application/json');
-    showToast('JSON exportado');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(18);
+    doc.text('Inventario de Pagos de Arriendos', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generado: ${new Date().toLocaleDateString('es-CL')}`, 14, 28);
+    const headers = [['Código','Tipo','Arrendatario','Teléfono','Mes','Monto','Saldo','Estado','Método']];
+    const rows = datos.map(d => [
+      d.codigo,
+      d.tipo === 'departamento' ? 'Dep' : 'Local',
+      d.arrendatario,
+      d.telefono || '-',
+      formatMes(d.mesPago),
+      formatCurrency(d.monto),
+      calcularSaldo(d) > 0 ? formatCurrency(calcularSaldo(d)) : 'Al día',
+      d.estado === 'pagado' ? 'Pagado' : 'Pendiente',
+      d.metodoPago || '-'
+    ]);
+    doc.autoTable({
+      head: headers,
+      body: rows,
+      startY: 35,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [99, 102, 241] }
+    });
+    doc.save('inventario_arriendos.pdf');
+    showToast('PDF exportado');
   }).catch(error => {
     showToast('Error al exportar: ' + error.message, 'error');
   });

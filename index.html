@@ -864,9 +864,12 @@ function actualizarTipoTamano() {
 }
 
 function toggleComprobante() {
-  const metodo = document.getElementById('metodoPago').value;
-  const comprobanteField = document.getElementById('comprobante').closest('.form-group');
+  const metodoSelect = document.getElementById('metodoPago');
+  if (!metodoSelect) return;
+  const metodo = metodoSelect.value;
+  const comprobanteField = document.getElementById('comprobante')?.closest('.form-group');
   const previewField = document.getElementById('previewContainer');
+  if (!comprobanteField || !previewField) return;
   if (metodo === 'transferencia') {
     comprobanteField.style.display = 'flex';
     previewField.style.display = 'flex';
@@ -893,9 +896,12 @@ function actualizarEditTipoTamano() {
 }
 
 function toggleEditComprobante() {
-  const metodo = document.getElementById('editMetodoPago').value;
-  const comprobanteField = document.getElementById('editComprobante').closest('.form-group');
+  const metodoSelect = document.getElementById('editMetodoPago');
+  if (!metodoSelect) return;
+  const metodo = metodoSelect.value;
+  const comprobanteField = document.getElementById('editComprobante')?.closest('.form-group');
   const previewField = document.getElementById('editPreviewContainer');
+  if (!comprobanteField || !previewField) return;
   if (metodo === 'transferencia') {
     comprobanteField.style.display = 'flex';
     previewField.style.display = 'flex';
@@ -910,6 +916,7 @@ function toggleEditComprobante() {
 function previewComprobante(input) {
   const container = document.getElementById('previewContainer');
   const img = document.getElementById('previewImg');
+  if (!container || !img) return;
   if (input.files && input.files[0]) {
     const reader = new FileReader();
     reader.onload = (e) => { img.src = e.target.result; container.style.display = 'block'; };
@@ -923,6 +930,7 @@ function previewComprobante(input) {
 function previewEditComprobante(input) {
   const container = document.getElementById('editPreviewContainer');
   const img = document.getElementById('editPreviewImg');
+  if (!container || !img) return;
   if (input.files && input.files[0]) {
     const reader = new FileReader();
     reader.onload = (e) => { img.src = e.target.result; container.style.display = 'block'; };
@@ -1100,6 +1108,7 @@ function actualizarDashboard(datos) {
 function actualizarAlertas(datos) {
   const panel = document.getElementById('alertPanel');
   const list = document.getElementById('alertList');
+  if (!panel || !list) return;
   const atrasados = datos.filter(d => d.estado === 'pendiente');
   const pagosParciales = datos.filter(d => d.estado === 'pagado' && d.monto < (d.monto * 0.9));
   const servicios = JSON.parse(localStorage.getItem('servicios') || '[]');
@@ -1130,6 +1139,7 @@ function actualizarAlertas(datos) {
 
 function actualizarFiltroMes(datos) {
   const select = document.getElementById('filtroMes');
+  if (!select) return;
   const current = select.value;
   const meses = [...new Set(datos.flatMap(d => d.mesesPagados || [d.mesPago]).filter(Boolean))].sort();
   select.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m => `<option value="${m}">${formatMes(m)}</option>`).join('');
@@ -1173,7 +1183,9 @@ function actualizarGrafico(datos) {
 
   const alDia = datos.filter(d => (d.mesesPagados || []).length >= (d.mesesTotales || 12)).length;
   const atrasados = datos.filter(d => d.estado === 'pendiente').length;
-  const ctx2 = document.getElementById('morosidadChart').getContext('2d');
+  const canvas2 = document.getElementById('morosidadChart');
+  if (!canvas2) return;
+  const ctx2 = canvas2.getContext('2d');
   if (window.morosidadChartInstance) window.morosidadChartInstance.destroy();
   window.morosidadChartInstance = new Chart(ctx2, {
     type: 'doughnut',
@@ -1198,6 +1210,7 @@ function actualizarGrafico(datos) {
 
 function renderCalendario(datos) {
   const container = document.getElementById('calendarioContainer');
+  if (!container) return;
   const meses = [...new Set(datos.flatMap(d => d.mesesPagados || [d.mesPago]).filter(Boolean))].sort();
   if (meses.length === 0) {
     container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">No hay datos para mostrar</p>';

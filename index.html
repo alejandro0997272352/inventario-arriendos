@@ -441,7 +441,7 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="form-group"><label>Fecha de Pago</label><input type="date" id="fechaPago"></div>
         <div class="form-group"><label>Estado *</label><select id="estado"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option></select></div>
         <div class="form-group"><label>Método de Pago</label><select id="metodoPago" onchange="toggleComprobante()"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select></div>
-        <div class="form-group"><label>Depósito de Garantía</label><input type="number" id="deposito" min="0" step="0.01" placeholder="0.00"></div>
+
         <div class="form-group"><label>Comprobante de Pago</label><input type="file" id="comprobante" accept="image/*" onchange="previewComprobante(this)"></div>
         <div class="form-group" id="previewContainer" style="display:none;"><label>Vista Previa</label><img id="previewImg" style="max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"></div>
       </div>
@@ -532,7 +532,7 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="form-group"><label>Fecha de Pago</label><input type="date" id="editFechaPago"></div>
         <div class="form-group"><label>Estado *</label><select id="editEstado"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option></select></div>
         <div class="form-group"><label>Método de Pago</label><select id="editMetodoPago" onchange="toggleEditComprobante()"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select></div>
-        <div class="form-group"><label>Depósito de Garantía</label><input type="number" id="editDeposito" min="0" step="0.01"></div>
+
         <div class="form-group"><label>Comprobante de Pago</label><input type="file" id="editComprobante" accept="image/*" onchange="previewEditComprobante(this)"></div>
         <div class="form-group" id="editPreviewContainer" style="display:none;"><label>Vista Previa</label><img id="editPreviewImg" style="max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"></div>
       </div>
@@ -944,7 +944,6 @@ document.getElementById('pagoForm').addEventListener('submit', async (e) => {
       existente.fechaPago = document.getElementById('fechaPago').value || null;
       existente.estado = document.getElementById('estado').value;
       existente.metodoPago = document.getElementById('metodoPago').value;
-      existente.deposito = parseFloat(document.getElementById('deposito').value) || 0;
       existente.telefono = document.getElementById('telefono').value.trim();
       existente.tamano = document.getElementById('tamano').value;
       if (comprobante) existente.comprobante = comprobante;
@@ -964,7 +963,6 @@ document.getElementById('pagoForm').addEventListener('submit', async (e) => {
         fechaPago: document.getElementById('fechaPago').value || null,
         estado: document.getElementById('estado').value,
         metodoPago: document.getElementById('metodoPago').value,
-        deposito: parseFloat(document.getElementById('deposito').value) || 0,
         comprobante: comprobante,
         creado: new Date().toISOString()
       };
@@ -1006,7 +1004,7 @@ function abrirEditar(id) {
     document.getElementById('editFechaPago').value = d.fechaPago || '';
     document.getElementById('editEstado').value = d.estado;
     document.getElementById('editMetodoPago').value = d.metodoPago || 'transferencia';
-    document.getElementById('editDeposito').value = d.deposito || 0;
+
     const previewContainer = document.getElementById('editPreviewContainer');
     const previewImg = document.getElementById('editPreviewImg');
     if (d.comprobante) {
@@ -1062,7 +1060,6 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
       fechaPago: document.getElementById('editFechaPago').value || null,
       estado: estado,
       metodoPago: document.getElementById('editMetodoPago').value,
-      deposito: parseFloat(document.getElementById('editDeposito').value) || 0
     });
     await put(original);
     cerrarModal();
@@ -1100,7 +1097,7 @@ function verHistorial(id) {
         <div class="info-item"><div class="label">Monto Mensual</div><div class="value">${formatCurrency(d.monto)}</div></div>
         <div class="info-item"><div class="label">Total Pagado</div><div class="value">${formatCurrency(d.monto * mesesPagados.length)}</div></div>
         <div class="info-item"><div class="label">Saldo Pendiente</div><div class="value" style="color:var(--danger)">${formatCurrency(calcularSaldo(d))}</div></div>
-        <div class="info-item"><div class="label">Depósito Garantía</div><div class="value">${formatCurrency(d.deposito || 0)}</div></div>
+
       </div>
       <h3 style="color:var(--text-bright);margin:20px 0 12px;font-size:1em;">Meses Pagados (${mesesPagados.length}/${d.mesesTotales || 12})</h3>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
@@ -1240,7 +1237,6 @@ function importarArchivo(event) {
           fechaPago: d.fechaPago || null,
           estado: d.estado || 'pendiente',
           metodoPago: d.metodoPago || 'transferencia',
-          deposito: parseFloat(d.deposito) || 0,
           comprobante: d.comprobante || null,
           creado: new Date().toISOString()
         });
@@ -1296,7 +1292,6 @@ function parseCSV(text) {
       else if (h.includes('fecha de pago') || h.includes('fecha_pago') || h.includes('fechapago')) obj.fechaPago = val || null;
       else if (h.includes('estado')) obj.estado = val || 'pendiente';
       else if (h.includes('método') || h.includes('metodo') || h.includes('métodopago')) obj.metodoPago = val || 'transferencia';
-      else if (h.includes('depósito') || h.includes('deposito')) obj.deposito = val || '0';
       else if (h.includes('comprobante')) obj.comprobante = val === 'Sí' || val === 'Si' ? null : null;
     });
     return obj;

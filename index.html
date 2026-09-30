@@ -595,7 +595,6 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="form-group"><label>Tipo *</label><select id="tipo" onchange="actualizarTipoTamano()"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
         <div class="form-group" id="tamanoContainer"><label>Tamaño</label><select id="tamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
         <div class="form-group"><label>Arrendatario *</label><input type="text" id="arrendatario" required placeholder="Nombre completo"></div>
-        <div class="form-group"><label>Teléfono</label><input type="tel" id="telefono" placeholder="+56 9 1234 5678"></div>
         <div class="form-group"><label>Mes de Pago *</label><input type="month" id="mesPago" required></div>
         <div class="form-group"><label>Meses Totales de Arriendo *</label><input type="number" id="mesesTotales" required min="1" max="60" placeholder="Ej: 12"></div>
         <div class="form-group"><label>Monto *</label><input type="number" id="monto" required min="0" step="0.01" placeholder="0.00"></div>
@@ -772,7 +771,6 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="form-group"><label>Tipo *</label><select id="editTipo" onchange="actualizarEditTipoTamano()"><option value="departamento">Departamento</option><option value="local">Local Comercial</option></select></div>
         <div class="form-group" id="editTamanoContainer"><label>Tamaño</label><select id="editTamano"><option value="estandar">Estándar</option><option value="grande">Grande</option></select></div>
         <div class="form-group"><label>Arrendatario *</label><input type="text" id="editArrendatario" required></div>
-        <div class="form-group"><label>Teléfono</label><input type="tel" id="editTelefono"></div>
         <div class="form-group"><label>Mes de Pago *</label><input type="month" id="editMesPago" required></div>
         <div class="form-group"><label>Meses Totales *</label><input type="number" id="editMesesTotales" required min="1" max="60"></div>
         <div class="form-group"><label>Monto *</label><input type="number" id="editMonto" required min="0" step="0.01"></div>
@@ -1596,7 +1594,6 @@ document.getElementById('pagoForm').addEventListener('submit', async (e) => {
       existente.fechaPago = document.getElementById('fechaPago').value || null;
       existente.estado = document.getElementById('estado').value;
       existente.metodoPago = document.getElementById('metodoPago').value;
-      existente.telefono = document.getElementById('telefono').value.trim();
       existente.tamano = document.getElementById('tamano').value;
       existente.etiqueta = document.getElementById('etiqueta').value;
       if (comprobante) existente.comprobante = comprobante;
@@ -1609,7 +1606,6 @@ document.getElementById('pagoForm').addEventListener('submit', async (e) => {
         tipo: document.getElementById('tipo').value,
         tamano: document.getElementById('tamano').value,
         arrendatario: arrendatario,
-        telefono: document.getElementById('telefono').value.trim(),
         mesPago: mesPago,
         mesesPagados: document.getElementById('estado').value === 'pagado' ? [mesPago] : [],
         mesesTotales: parseInt(document.getElementById('mesesTotales').value),
@@ -1673,7 +1669,7 @@ function abrirEditar(id) {
     document.getElementById('editTipo').value = d.tipo;
     document.getElementById('editTamano').value = d.tamano || 'estandar';
     document.getElementById('editArrendatario').value = d.arrendatario;
-    document.getElementById('editTelefono').value = d.telefono || '';
+
     document.getElementById('editMesPago').value = d.mesPago;
     document.getElementById('editMesesTotales').value = d.mesesTotales || 12;
     document.getElementById('editMonto').value = d.monto;
@@ -1731,7 +1727,6 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
       tipo: document.getElementById('editTipo').value,
       tamano: document.getElementById('editTamano').value,
       arrendatario: document.getElementById('editArrendatario').value.trim(),
-      telefono: document.getElementById('editTelefono').value.trim(),
       mesPago: mesPago,
       mesesTotales: parseInt(document.getElementById('editMesesTotales').value),
       monto: (original.monto || 0) + nuevoMonto,
@@ -1792,7 +1787,7 @@ function verHistorial(id) {
       <div class="info-grid">
         <div class="info-item"><div class="label">Unidad</div><div class="value">${esc(d.codigo)}</div></div>
         <div class="info-item"><div class="label">Arrendatario</div><div class="value">${esc(d.arrendatario)}</div></div>
-        <div class="info-item"><div class="label">Teléfono</div><div class="value">${esc(d.telefono || '-')}</div></div>
+
         <div class="info-item"><div class="label">Tipo</div><div class="value">${d.tipo === 'departamento' ? 'Departamento' : 'Local Comercial'}</div></div>
         <div class="info-item"><div class="label">Tamaño</div><div class="value">${d.tamano === 'grande' ? 'Grande' : 'Estándar'}</div></div>
         <div class="info-item"><div class="label">Monto Mensual</div><div class="value">${formatCurrency(d.monto)}</div></div>
@@ -1851,7 +1846,7 @@ function exportarHistorialCompleto(id) {
     doc.setFontSize(12);
     doc.text(`Unidad: ${d.codigo}`, 14, 30);
     doc.text(`Arrendatario: ${d.arrendatario}`, 14, 38);
-    doc.text(`Teléfono: ${d.telefono || '-'}`, 14, 46);
+
     doc.text(`Tipo: ${d.tipo === 'departamento' ? 'Departamento' : 'Local Comercial'}`, 14, 54);
     doc.text(`Monto Mensual: ${formatCurrency(d.monto)}`, 14, 62);
     doc.text(`Total Pagado: ${formatCurrency(d.monto * (d.mesesPagados || []).length)}`, 14, 70);
@@ -1995,12 +1990,11 @@ function exportarPDF() {
     doc.text('Inventario de Pagos de Arriendos', 14, 20);
     doc.setFontSize(10);
     doc.text(`Generado: ${new Date().toLocaleDateString('es-CL')}`, 14, 28);
-    const headers = [['Código','Tipo','Arrendatario','Teléfono','Mes','Monto','Saldo','Estado','Método']];
+    const headers = [['Código','Tipo','Arrendatario','Mes','Monto','Saldo','Estado','Método']];
     const rows = datos.map(d => [
       d.codigo,
       d.tipo === 'departamento' ? 'Dep' : 'Local',
       d.arrendatario,
-      d.telefono || '-',
       formatMes(d.mesPago),
       formatCurrency(d.monto),
       calcularSaldo(d) > 0 ? formatCurrency(calcularSaldo(d)) : 'Al día',
@@ -2043,7 +2037,6 @@ function importarArchivo(event) {
           tipo: d.tipo || 'departamento',
           tamano: d.tamano || 'estandar',
           arrendatario: d.arrendatario || '',
-          telefono: d.telefono || '',
           mesPago: d.mesPago || '',
           mesesPagados: d.mesesPagados || [],
           mesesTotales: parseInt(d.mesesTotales) || 12,
@@ -2098,7 +2091,6 @@ function parseCSV(text) {
       else if (h.includes('tipo')) obj.tipo = val || 'departamento';
       else if (h.includes('tamaño') || h.includes('tamano')) obj.tamano = val || 'estandar';
       else if (h.includes('arrendatario')) obj.arrendatario = val;
-      else if (h.includes('teléfono') || h.includes('telefono')) obj.telefono = val;
       else if (h.includes('mes de pago') || h.includes('mes_pago') || h.includes('mespago')) obj.mesPago = val;
       else if (h.includes('meses pagados') || h.includes('meses_pagados') || h.includes('mesespagados')) obj.mesesPagados = val ? val.split(';').filter(Boolean) : [];
       else if (h.includes('meses totales') || h.includes('meses_totales') || h.includes('mesestotales')) obj.mesesTotales = val || '12';

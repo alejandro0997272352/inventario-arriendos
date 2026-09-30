@@ -41,6 +41,8 @@ body {
   min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 body::before {
   content: '';
@@ -68,9 +70,9 @@ body::before {
 
 .container { max-width: 1400px; margin: 0 auto; padding: 28px; padding-top: 80px; position: relative; z-index: 1; }
 
-.header { text-align: center; padding: 40px 0 32px; }
+.header { text-align: center; padding: 48px 0 36px; }
 .header h1 {
-  font-size: 2.4em;
+  font-size: 2.6em;
   font-weight: 800;
   background: linear-gradient(135deg, #c7d2fe 0%, #e9d5ff 30%, #c7d2fe 60%, #a5b4fc 100%);
   background-size: 300% auto;
@@ -78,10 +80,10 @@ body::before {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: shimmer 6s ease infinite;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   letter-spacing: -0.5px;
 }
-.header p { color: var(--text-muted); font-size: 0.95em; font-weight: 400; }
+.header p { color: var(--text-muted); font-size: 1em; font-weight: 400; }
 
 @keyframes shimmer { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
 
@@ -121,6 +123,7 @@ body::before {
   transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
   position: relative;
   overflow: hidden;
+  border-radius: 16px;
 }
 .stat-card::before {
   content: '';
@@ -157,7 +160,8 @@ body::before {
 .progress-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
 .progress-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shimmer 2s infinite; }
 
-.card { padding: 28px; margin-bottom: 28px; border-radius: 20px; position: relative; overflow: hidden; animation: fadeInUp 0.5s ease backwards; }
+.card { padding: 28px; margin-bottom: 28px; border-radius: 20px; position: relative; overflow: hidden; animation: fadeInUp 0.5s ease backwards; transition: all 0.3s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--primary), transparent); }
 .card-title { font-size: 1.15em; font-weight: 700; color: var(--text-bright); margin-bottom: 22px; display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 2px solid var(--glass-border); }
 
@@ -196,6 +200,7 @@ body::before {
   gap: 8px;
   position: relative;
   overflow: hidden;
+  letter-spacing: 0.2px;
 }
 .btn::after {
   content: '';

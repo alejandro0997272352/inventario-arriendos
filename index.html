@@ -1094,20 +1094,8 @@ function toggleDashboard() {
 
 function toggleTema() {
   const body = document.body;
-  const isDark = body.style.background !== '#f0f4f8';
-  if (isDark) {
-    body.style.background = '#f0f4f8';
-    body.style.backgroundImage = 'none';
-    body.style.color = '#334155';
-    document.documentElement.style.setProperty('--text', '#334155');
-    document.documentElement.style.setProperty('--text-bright', '#1e293b');
-    document.documentElement.style.setProperty('--text-muted', '#64748b');
-    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.85)');
-    document.documentElement.style.setProperty('--glass-strong', 'rgba(255,255,255,0.95)');
-    document.documentElement.style.setProperty('--glass-border', 'rgba(0,0,0,0.08)');
-    document.documentElement.style.setProperty('--shadow', '0 4px 12px rgba(0,0,0,0.08)');
-    document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.12)');
-  } else {
+  const isLight = body.style.background === '#f0f4f8';
+  if (isLight) {
     body.style.background = '#08080f';
     body.style.backgroundImage = '';
     body.style.color = '#e2e8f0';
@@ -1119,6 +1107,18 @@ function toggleTema() {
     document.documentElement.style.setProperty('--glass-border', 'rgba(255,255,255,0.09)');
     document.documentElement.style.setProperty('--shadow', '0 8px 32px rgba(0,0,0,0.25)');
     document.documentElement.style.setProperty('--shadow-lg', '0 10px 15px -3px rgba(0,0,0,0.08)');
+  } else {
+    body.style.background = '#f0f4f8';
+    body.style.backgroundImage = 'none';
+    body.style.color = '#334155';
+    document.documentElement.style.setProperty('--text', '#334155');
+    document.documentElement.style.setProperty('--text-bright', '#1e293b');
+    document.documentElement.style.setProperty('--text-muted', '#64748b');
+    document.documentElement.style.setProperty('--glass', 'rgba(255,255,255,0.85)');
+    document.documentElement.style.setProperty('--glass-strong', 'rgba(255,255,255,0.95)');
+    document.documentElement.style.setProperty('--glass-border', 'rgba(0,0,0,0.08)');
+    document.documentElement.style.setProperty('--shadow', '0 4px 12px rgba(0,0,0,0.08)');
+    document.documentElement.style.setProperty('--shadow-lg', '0 8px 24px rgba(0,0,0,0.12)');
   }
 }
 

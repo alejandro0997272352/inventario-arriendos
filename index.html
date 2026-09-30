@@ -509,11 +509,11 @@ tbody tr:last-child td { border-bottom: none; }
     <button class="nav-btn" onclick="busquedaAvanzada()" title="Búsqueda avanzada (Ctrl+F)">&#128269;</button>
     <button class="nav-btn" onclick="exportarPDF()" title="Exportar PDF (Ctrl+E)">&#128196;</button>
     <div style="display:flex;gap:4px;align-items:center;">
-      <button class="color-theme-btn active" style="background:#6366f1;" onclick="setColorTheme('#6366f1')" title="Índigo"></button>
-      <button class="color-theme-btn" style="background:#10b981;" onclick="setColorTheme('#10b981')" title="Esmeralda"></button>
-      <button class="color-theme-btn" style="background:#f59e0b;" onclick="setColorTheme('#f59e0b')" title="Ámbar"></button>
-      <button class="color-theme-btn" style="background:#ef4444;" onclick="setColorTheme('#ef4444')" title="Rojo"></button>
-      <button class="color-theme-btn" style="background:#8b5cf6;" onclick="setColorTheme('#8b5cf6')" title="Violeta"></button>
+      <button class="color-theme-btn active" style="background:#6366f1;" onclick="setColorTheme('#6366f1', this)" title="Índigo"></button>
+      <button class="color-theme-btn" style="background:#10b981;" onclick="setColorTheme('#10b981', this)" title="Esmeralda"></button>
+      <button class="color-theme-btn" style="background:#f59e0b;" onclick="setColorTheme('#f59e0b', this)" title="Ámbar"></button>
+      <button class="color-theme-btn" style="background:#ef4444;" onclick="setColorTheme('#ef4444', this)" title="Rojo"></button>
+      <button class="color-theme-btn" style="background:#8b5cf6;" onclick="setColorTheme('#8b5cf6', this)" title="Violeta"></button>
     </div>
   </div>
 </nav>
@@ -2171,11 +2171,11 @@ function actualizarSelectGastos(datos) {
   // Función mantenida por compatibilidad, ya no se usa
 }
 
-function setColorTheme(color) {
+function setColorTheme(color, btnElement) {
   document.documentElement.style.setProperty('--primary', color);
   document.documentElement.style.setProperty('--primary-glow', color + '4d');
   document.querySelectorAll('.color-theme-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
+  if (btnElement) btnElement.classList.add('active');
   localStorage.setItem('colorTheme', color);
   showToast('Tema de color cambiado');
 }

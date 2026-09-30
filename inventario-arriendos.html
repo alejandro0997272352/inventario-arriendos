@@ -623,9 +623,13 @@ function formatCurrency(val) {
 
 function formatMes(mes) {
   if (!mes) return '-';
-  const [y, m] = mes.split('-');
+  const parts = String(mes).split('-');
+  if (parts.length < 2) return mes;
+  const y = parts[0];
+  const m = parseInt(parts[1], 10);
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  return (meses[parseInt(m)-1] || m) + ' ' + y;
+  const nombreMes = meses[m - 1] || parts[1];
+  return nombreMes + ' ' + y;
 }
 
 function showToast(msg, type = 'success') {

@@ -13,6 +13,9 @@
 <meta name="theme-color" content="#6366f1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <script src="https://cdn.jsdelivr.net/npm/chart.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2?v=3"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=3"></script>
@@ -501,12 +504,12 @@ tbody tr:last-child td { border-bottom: none; }
     <span class="nav-title">Inventario de Arriendos</span>
   </div>
   <div class="nav-links">
-    <a href="javascript:void(0)" class="nav-link active" onclick="showPanel('dashboard', this)">&#128200; Dashboard</a>
-    <a href="javascript:void(0)" class="nav-link" onclick="showPanel('registros', this)">&#128202; Registros</a>
-    <a href="javascript:void(0)" class="nav-link" onclick="showPanel('nuevo', this)">&#128203; Nuevo</a>
-    <a href="javascript:void(0)" class="nav-link" onclick="showPanel('servicios', this)">&#9881; Servicios</a>
-    <a href="javascript:void(0)" class="nav-link" onclick="showPanel('reportes', this)">&#128196; Reportes</a>
-    <a href="javascript:void(0)" class="nav-link" onclick="showPanel('config', this)">&#9881; Config</a>
+    <a href="#" class="nav-link active" onclick="showPanel('dashboard', this); return false;">&#128200; Dashboard</a>
+    <a href="#" class="nav-link" onclick="showPanel('registros', this); return false;">&#128202; Registros</a>
+    <a href="#" class="nav-link" onclick="showPanel('nuevo', this); return false;">&#128203; Nuevo</a>
+    <a href="#" class="nav-link" onclick="showPanel('servicios', this); return false;">&#9881; Servicios</a>
+    <a href="#" class="nav-link" onclick="showPanel('reportes', this); return false;">&#128196; Reportes</a>
+    <a href="#" class="nav-link" onclick="showPanel('config', this); return false;">&#9881; Config</a>
   </div>
   <div class="nav-actions">
     <button class="nav-btn" onclick="toggleTema()" title="Cambiar tema (Ctrl+T)">&#127769;</button>
@@ -612,6 +615,7 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </form>
   </div>
+  </div>
 
   <div id="panel-registros" class="panel">
   <div class="alert-panel" id="alertPanel" style="display:none;">
@@ -685,6 +689,7 @@ tbody tr:last-child td { border-bottom: none; }
       <button class="btn btn-danger" onclick="eliminarTodo()">Eliminar Todo</button>
     </div>
   </div>
+  </div>
 
   <div id="panel-reportes" class="panel">
   <div class="card glass">
@@ -704,6 +709,7 @@ tbody tr:last-child td { border-bottom: none; }
   <div class="card glass">
     <div class="card-title">&#128197; Vista de Calendario</div>
     <div id="calendarioContainer" style="overflow-x:auto;"></div>
+  </div>
   </div>
 
   <div id="panel-servicios" class="panel">
@@ -2220,7 +2226,6 @@ function showPanel(panelId, navElement) {
   if (panelId === 'servicios') { renderServicios(); renderServiciosChart(); }
   if (panelId === 'reportes') actualizarGrafico([]);
 }
-}
 
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'n') { e.preventDefault(); document.getElementById('pagoForm').scrollIntoView({ behavior: 'smooth' }); }
@@ -2228,6 +2233,11 @@ document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key === 'e') { e.preventDefault(); exportarPDF(); }
   if (e.ctrlKey && e.key === 't') { e.preventDefault(); toggleTema(); }
 });
+
+window.addEventListener('error', function (e) {
+  if (e.target && e.target.tagName !== 'SCRIPT') return;
+  console.error('[Inventario] No se pudo cargar: ' + ((e.target && e.target.src) || e.filename || 'script inline'));
+}, true);
 
 initDB().then(async () => {
   aplicarTemaGuardado();

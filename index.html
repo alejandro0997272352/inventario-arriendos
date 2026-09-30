@@ -1137,7 +1137,9 @@ function actualizarFiltroMes(datos) {
 }
 
 function actualizarGrafico(datos) {
-  const ctx = document.getElementById('ingresosChart').getContext('2d');
+  const canvas = document.getElementById('ingresosChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
   const meses = [...new Set(datos.flatMap(d => d.mesesPagados || [d.mesPago]).filter(Boolean))].sort();
   const ingresos = meses.map(m => datos.reduce((s, d) => {
     if ((d.mesesPagados || []).includes(m)) return s + d.monto;
